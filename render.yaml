@@ -1,0 +1,39 @@
+# Render Blueprint — free demo deploy of the Pink Caravan platform.
+# In Render: New + → Blueprint → connect this repo. Everything below is applied automatically.
+services:
+  - type: web
+    name: pink-caravan-demo
+    runtime: docker
+    plan: free
+    region: frankfurt          # closest free region to the UAE; change if you prefer
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /up
+    autoDeploy: true
+    envVars:
+      - key: APP_NAME
+        value: "Pink Caravan"
+      - key: APP_ENV
+        value: production
+      # Demo convenience: shows the patient OTP on-screen (no SMS gateway needed to log in as a patient).
+      - key: APP_DEBUG
+        value: "true"
+      - key: APP_KEY
+        value: "base64:hsdSks/45/IKKaUi3SmAtoMi+TVjbSPsH+WiNMmG2Fg="
+      # After the first deploy, set this to the URL Render assigns (https://<name>.onrender.com).
+      - key: APP_URL
+        value: "https://pink-caravan-demo.onrender.com"
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: DB_CONNECTION
+        value: sqlite
+      - key: DB_DATABASE
+        value: /var/www/html/database/database.sqlite
+      - key: SESSION_DRIVER
+        value: file
+      - key: CACHE_STORE
+        value: file
+      - key: QUEUE_CONNECTION
+        value: sync
+      # Notifications stay stubbed (logged) for the demo until real gateways are set.
+      - key: MAIL_MAILER
+        value: log

@@ -1,0 +1,183 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Mail\ReportReadyMail;
+use App\Models\Clinic;
+use App\Models\PatientHistoryRecord;
+use App\Models\User;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Tests\TestCase;
+
+/**
+ * Covers the July 2026 business-feedback changes end to end:
+ * registration form new fields, doctor CBE result, mammographer role +
+ * post-campaign report upload/send.
+ */
+class BusinessFeedbackTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed();
+    }
+
+    private function user(string $email): User
+    {
+        return User::where('email', $email)->firstOrFail();
+    }
+
+    public function test_key_pages_render_for_each_role(): void
+    {
+        $this->actingAs($this->user('s.nuaimi@focp.ae'))->get('/nurse/record')->assertOk();
+        $this->actingAs($this->user('n.khalid@focp.ae'))->get('/mammographer/queue')->assertOk();
+        $this->actingAs($this->user('anish@focp.ae'))->get('/super/users/create')
+            ->assertOk()->assertSee('Mammographer');
+    }
+
+    public function test_emirates_id_reader_mock_returns_card_data(): void
+    {
+        $this->actingAs($this->user('s.nuaimi@focp.ae'))
+            ->getJson('/tools/emirates-id/read')
+            ->assertOk()
+            ->assertJsonPath('success', true)
+            ->assertJsonStructure(['data' => ['emirates_id', 'full_name_en', 'date_of_birth', 'nationality']]);
+    }
+
+    public function test_full_registration_exam_and_report_flow(): void
+    {
+        Storage::fake('local');
+        Mail::fake();
+
+        $nurse = $this->user('s.nuaimi@focp.ae');
+        $dubai = Clinic::where('code', 'DXB-MOB-01')->firstOrFail();
+
+        // 1. Nurse submits the registration with all the new fields.
+        $this->actingAs($nurse)->post('/nurse/record', [
+            'action'           => 'submit',
+            'manual_pc_number' => 'PC-MANUAL-001',
+            'emirates_id'      => '784-1990-1234567-1',
+            'full_name'        => 'Test Patient',
+            'email'            => 'patient@example.com',
+            'mobile1'          => '+971500000000',
+            'breast_implant'   => 'no',
+            'cbe_result'       => 'normal',
+            'personal'         => ['biopsy' => 'yes'],
+            'personal_notes'   => ['biopsy' => 'left side 2019'],
+            'family'           => ['deg1' => ['relationship' => 'Parent', 'age' => '45']],
+            'consent'          => '1',
+            'patient_signature'=> 'data:image/png;base64,iVBORw0KGgo=',
+            'signed_at'        => now()->toDateString(),
+        ])->assertRedirect(route('nurse.queue'));
+
+        $record = PatientHistoryRecord::latest('id')->firstOrFail();
+        $this->assertSame('submitted', $record->status);
+        $this->assertSame('PC-MANUAL-001', $record->patient->manual_pc_number);
+        $this->assertSame('784-1990-1234567-1', $record->patient->emirates_id);
+        $this->assertSame('no', $record->breast_implant);
+        $this->assertSame('yes', $record->personal_history['biopsy']);
+        $this->assertSame('left side 2019', $record->personal_history_notes['biopsy']);
+        $this->assertSame('Parent', $record->family_history['deg1']['relationship']);
+        $this->assertSame(45, $record->family_history['deg1']['age']);
+        $this->assertNotEmpty($record->patient_signature);
+
+        // Registration must be blocked without a signature.
+        $this->actingAs($nurse)->post('/nurse/record', [
+            'action'    => 'submit',
+            'full_name' => 'No Signature',
+            'mobile1'   => '+971500000001',
+            'consent'   => '1',
+        ])->assertSessionHasErrors('patient_signature');
+
+        // 2. Clinic admin assigns the record to a Dubai doctor.
+        $doctor = User::role('doctor')
+            ->whereHas('clinics', fn ($q) => $q->where('clinics.id', $dubai->id))
+            ->firstOrFail();
+
+        $this->actingAs($this->user('mariam.s@focp.ae'))
+            ->post('/clinic/assign', ['record_id' => $record->id, 'doctor_id' => $doctor->id])
+            ->assertRedirect();
+
+        $record->refresh();
+        $this->assertSame('assigned', $record->status);
+
+        // 3. Doctor sees the Form 1 review + CBE result control, then submits.
+        $this->actingAs($doctor)->get("/doctor/exam/{$record->id}")
+            ->assertOk()
+            ->assertSee('Patient registration (Form 1)')
+            ->assertSee('Clinical Breast Examination Result');
+
+        $this->actingAs($doctor)->put("/doctor/exam/{$record->id}", [
+            'action'         => 'submit',
+            'cbe_result'     => 'abnormal',
+            'recommendation' => 'Refer to mammogram',
+            'symptoms'       => [],
+            'signs'          => [],
+            'pins'           => '[]',
+        ])->assertRedirect();
+
+        $record->refresh();
+        $this->assertSame('completed', $record->status);
+        $this->assertSame('abnormal', $record->examination->cbe_result);
+        $this->assertSame('abnormal', $record->examination->result);
+
+        // Doctor can download the generated report PDF from the Completed tab.
+        $this->actingAs($doctor)->get("/doctor/exam/{$record->id}/report")
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+
+        // Report has a verification code; the bilingual document view renders and shows it.
+        $report = $record->report()->first();
+        $this->assertNotNull($report->verify_code);
+        $this->actingAs($doctor)->get("/reports/{$record->id}/document")
+            ->assertOk()
+            ->assertSee($report->verify_code)
+            ->assertSee('Clinical Breast Examination Report');
+
+        // Public verification: correct code + ref → valid (masked, no clinical data); wrong → invalid.
+        $this->get('/verify')->assertOk()->assertSee('Report verification');
+        $this->postJson('/verify/check', ['code' => $report->verify_code, 'ref' => $record->ref_no])
+            ->assertOk()->assertJsonPath('valid', true)->assertJsonPath('data.ref', $record->ref_no);
+        $this->postJson('/verify/check', ['code' => 'V-ZZZZ-ZZZZ', 'ref' => $record->ref_no])
+            ->assertOk()->assertJsonPath('valid', false);
+
+        // 4. Mammographer uploads the mammogram report and sends it.
+        $mammo = $this->user('n.khalid@focp.ae');
+
+        $this->actingAs($mammo)->get('/mammographer/queue')->assertOk()->assertSee($record->ref_no);
+        $this->actingAs($mammo)->get("/mammographer/record/{$record->id}")->assertOk();
+
+        $this->actingAs($mammo)->put("/mammographer/record/{$record->id}", [
+            'manual_pc_number' => 'PC-MANUAL-001',
+            'full_name'        => 'Test Patient',
+            'email'            => 'patient@example.com',
+            'mobile1'          => '+971500000000',
+            'report'           => UploadedFile::fake()->create('mammo.pdf', 120, 'application/pdf'),
+        ])->assertRedirect();
+
+        $record->refresh();
+        $this->assertNotNull($record->mammogram_report_path);
+        $this->assertNotNull($record->report_uploaded_at);
+        $this->assertSame($mammo->id, $record->mammographer_id);
+        Storage::assertExists($record->mammogram_report_path);
+
+        $this->actingAs($mammo)->post("/mammographer/record/{$record->id}/send")
+            ->assertRedirect(route('mammographer.queue'));
+
+        $record->refresh();
+        $this->assertSame('report_sent', $record->status);
+        $this->assertNotNull($record->report_sent_at);
+
+        // Patient is notified across all three channels (email really sent; SMS/WhatsApp logged as stub).
+        Mail::assertSent(ReportReadyMail::class, fn ($m) => $m->hasTo('patient@example.com'));
+        $delivery = $record->report()->first()->delivery;
+        $this->assertSame('sent', $delivery['email']);
+        $this->assertSame('logged', $delivery['sms']);
+        $this->assertSame('logged', $delivery['whatsapp']);
+    }
+}

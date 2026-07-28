@@ -1,0 +1,101 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+
+class PatientHistoryRecord extends Model
+{
+    // Workflow statuses
+    public const DRAFT      = 'draft';
+    public const SUBMITTED  = 'submitted';   // submitted by nurse, awaiting assignment
+    public const ASSIGNED   = 'assigned';    // assigned to a doctor, awaiting exam
+    public const IN_REVIEW  = 'in_review';   // doctor working on it
+    public const COMPLETED  = 'completed';   // exam done, report generated
+    public const REPORT_SENT = 'report_sent'; // mammogram report uploaded + sent to patient
+
+    protected $fillable = [
+        'ref_no', 'patient_id', 'clinic_id', 'nurse_id', 'assigned_doctor_id', 'mammographer_id', 'record_date',
+        'age_at_menarche', 'number_of_children', 'breast_implant', 'age_first_delivery', 'lmp', 'menopause', 'menopause_since_year',
+        'personal_history', 'personal_history_notes', 'family_history',
+        'breastfeeding_under6', 'breastfeeding_children', 'last_mammogram', 'cbe_result', 'examiner_name',
+        'consent_given', 'consent_at', 'consent_statements', 'patient_signature', 'signed_at',
+        'mammogram_report_path', 'report_uploaded_at', 'report_sent_at',
+        'status', 'submitted_at',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'record_date'            => 'date',
+            'lmp'                    => 'date',
+            'last_mammogram'         => 'date',
+            'signed_at'              => 'date',
+            'menopause'              => 'boolean',
+            'breastfeeding_under6'   => 'boolean',
+            'consent_given'          => 'boolean',
+            'consent_at'             => 'datetime',
+            'submitted_at'           => 'datetime',
+            'report_uploaded_at'     => 'datetime',
+            'report_sent_at'         => 'datetime',
+            'personal_history'       => 'array',
+            'personal_history_notes' => 'array',
+            'family_history'         => 'array',
+            'consent_statements'     => 'array',
+        ];
+    }
+
+    public function patient(): BelongsTo
+    {
+        return $this->belongsTo(Patient::class);
+    }
+
+    public function clinic(): BelongsTo
+    {
+        return $this->belongsTo(Clinic::class);
+    }
+
+    public function nurse(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'nurse_id');
+    }
+
+    public function doctor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_doctor_id');
+    }
+
+    public function mammographer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'mammographer_id');
+    }
+
+    public function examination(): HasOne
+    {
+        return $this->hasOne(ClinicalExamination::class, 'record_id');
+    }
+
+    public function referrals(): HasMany
+    {
+        return $this->hasMany(Referral::class, 'record_id');
+    }
+
+    public function report(): HasOne
+    {
+        return $this->hasOne(Report::class, 'record_id');
+    }
+
+    public function isEditableByNurse(): bool
+    {
+        return $this->status === self::DRAFT;
+    }
+
+    /** Final result comes from the doctor's exam, falling back to the nurse's initial CBE result. */
+    public function finalResult(): ?string
+    {
+        return $this->examination?->result ?? $this->cbe_result;
+    }
+}
