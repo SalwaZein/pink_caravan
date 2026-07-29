@@ -12,6 +12,7 @@ use App\Http\Controllers\PageController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RecordController;
+use App\Http\Controllers\ServiceBookingController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -109,9 +110,20 @@ Route::middleware('auth')->get('/reports/{record}/document', [ReportController::
 Route::middleware('auth')->group(function () {
     Route::get('/super/dashboard', [PageController::class, 'superDashboard'])->middleware('can:view_dashboards')->name('super.dashboard');
     Route::get('/super/audit',     [PageController::class, 'superAudit'])->middleware('can:view_audit')->name('super.audit');
-    Route::get('/super/bookings',  [BookingController::class, 'adminIndex'])->middleware('can:view_dashboards')->name('super.bookings');
     Route::get('/super/export/csv', [ExportController::class, 'csv'])->middleware('can:view_dashboards')->name('super.export.csv');
     Route::get('/super/export/pdf', [ExportController::class, 'pdf'])->middleware('can:view_dashboards')->name('super.export.pdf');
+
+    // Service bookings — review workflow (Administration). Each action gated by its own permission.
+    Route::prefix('super/bookings')->name('super.bookings.')->group(function () {
+        Route::get('/',                  [ServiceBookingController::class, 'index'])->middleware('can:review_bookings')->name('index');
+        Route::get('/dashboard',         [ServiceBookingController::class, 'dashboard'])->middleware('can:review_bookings')->name('dashboard');
+        Route::get('/{booking}',         [ServiceBookingController::class, 'show'])->middleware('can:review_bookings')->whereNumber('booking')->name('show');
+        Route::get('/{booking}/report',  [ServiceBookingController::class, 'report'])->middleware('can:review_bookings')->whereNumber('booking')->name('report');
+        Route::post('/{booking}/approve',  [ServiceBookingController::class, 'approve'])->middleware('can:approve_bookings')->whereNumber('booking')->name('approve');
+        Route::post('/{booking}/reject',   [ServiceBookingController::class, 'reject'])->middleware('can:approve_bookings')->whereNumber('booking')->name('reject');
+        Route::post('/{booking}/paid',     [ServiceBookingController::class, 'markPaid'])->middleware('can:mark_bookings_paid')->whereNumber('booking')->name('paid');
+        Route::post('/{booking}/complete', [ServiceBookingController::class, 'complete'])->middleware('can:complete_bookings')->whereNumber('booking')->name('complete');
+    });
 
     // Clinics (Phase 1a — functional)
     Route::middleware('can:manage_clinics')->prefix('super/clinics')->name('super.clinics.')->group(function () {

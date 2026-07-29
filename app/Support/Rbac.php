@@ -12,15 +12,16 @@ class Rbac
 {
     /** Permissions grouped by area. Values are permission names. */
     public const GROUPS = [
-        'administration' => ['manage_clinics', 'manage_users'],
-        'operations'     => ['register_patients', 'assign_doctors'],
-        'clinical'       => ['fill_record_sheet', 'perform_clinical_exam', 'manage_mammograms'],
-        'reporting'      => ['view_dashboards', 'view_audit'],
+        'administration'   => ['manage_clinics', 'manage_users'],
+        'service_bookings' => ['review_bookings', 'approve_bookings', 'mark_bookings_paid', 'complete_bookings'],
+        'operations'       => ['register_patients', 'assign_doctors'],
+        'clinical'         => ['fill_record_sheet', 'perform_clinical_exam', 'manage_mammograms'],
+        'reporting'        => ['view_dashboards', 'view_audit'],
     ];
 
     /** Default capabilities per role (a starting template — fully editable per user). */
     public const ROLE_DEFAULTS = [
-        'super_admin'  => ['manage_clinics', 'manage_users', 'register_patients', 'assign_doctors', 'fill_record_sheet', 'perform_clinical_exam', 'manage_mammograms', 'view_dashboards', 'view_audit'],
+        'super_admin'  => ['manage_clinics', 'manage_users', 'review_bookings', 'approve_bookings', 'mark_bookings_paid', 'complete_bookings', 'register_patients', 'assign_doctors', 'fill_record_sheet', 'perform_clinical_exam', 'manage_mammograms', 'view_dashboards', 'view_audit'],
         'clinic_admin' => ['register_patients', 'assign_doctors', 'view_dashboards'],
         'nurse'        => ['register_patients', 'fill_record_sheet'],
         'doctor'       => ['perform_clinical_exam'],

@@ -7,7 +7,6 @@ use App\Support\Audit;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\View\View;
 
 class BookingController extends Controller
 {
@@ -53,17 +52,5 @@ class BookingController extends Controller
         Audit::log('booking.created', $booking, "{$booking->ref_no} — {$booking->organisation}");
 
         return redirect()->route('booking')->with('booking_ref', $booking->ref_no);
-    }
-
-    /** Super admin — booking queue. */
-    public function adminIndex(): View
-    {
-        $bookings = Booking::with('services')->latest()->get();
-
-        return view('super.bookings', [
-            'bookings'    => $bookings,
-            'sidebarRole' => auth()->user()->sidebarRole(),
-            'route'       => 'super/bookings',
-        ]);
     }
 }

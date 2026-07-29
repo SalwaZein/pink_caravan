@@ -74,7 +74,8 @@
     if ($authUser) {
         if ($authUser->can('view_dashboards')) $adminItems[] = ['key' => 'super/dashboard', 'icon' => '📊', 'label' => __('pc.nav_dashboard')];
         if ($authUser->can('manage_clinics'))  $adminItems[] = ['key' => 'super/clinics',   'icon' => '🏥', 'label' => __('pc.nav_clinics')];
-        if ($authUser->can('view_dashboards')) $adminItems[] = ['key' => 'super/bookings',   'icon' => '📅', 'label' => __('pc.nav_bookings')];
+        if ($authUser->can('review_bookings')) $adminItems[] = ['key' => 'super/bookings',   'icon' => '📅', 'label' => __('pc.nav_bookings')];
+        if ($authUser->can('review_bookings')) $adminItems[] = ['key' => 'super/bookings/dashboard', 'icon' => '📈', 'label' => __('pc.nav_bookings_dashboard')];
         if ($authUser->can('manage_users'))    $adminItems[] = ['key' => 'super/users',     'icon' => '🔐', 'label' => __('pc.nav_users_roles')];
         if ($authUser->can('view_audit'))      $adminItems[] = ['key' => 'super/audit',     'icon' => '🧾', 'label' => __('pc.nav_audit_log')];
     }
