@@ -12,12 +12,14 @@ RUN npm run build
 # --- Stage 2: PHP 8.3 runtime ---
 FROM php:8.3-cli AS app
 
-# System libs + PHP extensions the app uses (mPDF/dompdf: gd, mbstring, zip; DB: sqlite/mysql; intl/bcmath/exif).
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        git unzip libzip-dev libpng-dev libjpeg-dev libfreetype6-dev libonig-dev libicu-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j"$(nproc)" pdo_mysql pdo_sqlite mbstring gd zip intl bcmath exif \
+# git + unzip for Composer. PHP extensions are installed via mlocati's helper,
+# which pulls in each extension's required system libraries automatically
+# (mPDF/dompdf: gd, mbstring, zip; DB: sqlite/mysql; intl/bcmath/exif).
+RUN apt-get update && apt-get install -y --no-install-recommends git unzip \
     && rm -rf /var/lib/apt/lists/*
+
+COPY --from=mlocati/php-extension-installer:latest /usr/bin/install-php-extensions /usr/local/bin/
+RUN install-php-extensions pdo_mysql pdo_sqlite mbstring gd zip intl bcmath exif
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
