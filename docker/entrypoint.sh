@@ -2,16 +2,20 @@
 set -e
 cd /var/www/html
 
-# Writable dirs + SQLite database file (ephemeral on free hosting — fine for a demo).
-mkdir -p database storage/framework/cache storage/framework/sessions storage/framework/views storage/app/public storage/logs
-touch database/database.sqlite
+# Writable dirs (already in the image, but be safe if a disk gets mounted here).
+mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/app/public storage/logs
 
-# Fresh, seeded demo data on every boot (seeders are idempotent; disk resets anyway).
-php artisan config:clear
-php artisan migrate:fresh --seed --force
+# The seeded SQLite database is baked into the image at build time, so we do NOT
+# migrate/seed on every boot — that is what made cold starts slow. Only fall back
+# to creating & seeding it if it is somehow missing (e.g. an empty mounted disk).
+if [ ! -s database/database.sqlite ]; then
+  touch database/database.sqlite
+  php artisan migrate --force --seed
+fi
+
 php artisan storage:link || true
 
-# Cache for speed (env vars are read at boot from the host).
+# Fast caches (env vars are read from the host at boot).
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache

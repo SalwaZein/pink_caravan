@@ -33,8 +33,16 @@ RUN composer install --no-dev --no-scripts --no-interaction --prefer-dist --opti
 COPY . .
 COPY --from=assets /app/public/build ./public/build
 
+# Build a pre-migrated, pre-seeded SQLite database INTO the image so runtime
+# cold starts are fast (no migrate/seed at boot). The free tier wipes the disk
+# on every spin-down, so the container always boots from this baked-in DB.
 RUN composer dump-autoload --optimize \
-    && chmod -R 775 storage bootstrap/cache
+    && mkdir -p database storage/framework/cache storage/framework/sessions storage/framework/views storage/app/public storage/logs \
+    && touch database/database.sqlite \
+    && APP_KEY="base64:hsdSks/45/IKKaUi3SmAtoMi+TVjbSPsH+WiNMmG2Fg=" \
+       DB_CONNECTION=sqlite DB_DATABASE=/var/www/html/database/database.sqlite \
+       php artisan migrate --force --seed \
+    && chmod -R 775 storage bootstrap/cache database
 
 COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
