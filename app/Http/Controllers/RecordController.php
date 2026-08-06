@@ -45,7 +45,6 @@ class RecordController extends Controller
 
             $patient = Patient::create([
                 'pc_number'       => $pc,
-                'manual_pc_number'=> $data['manual_pc_number'] ?? null,
                 'emirates_id'     => $data['emirates_id'] ?? null,
                 'full_name'      => $data['full_name'],
                 'dob'            => $data['dob'] ?? null,
@@ -100,7 +99,7 @@ class RecordController extends Controller
         DB::transaction(function () use ($data, $isSubmit, $record) {
             $patient = $record->patient;
             $patient->update([
-                'manual_pc_number'=> $data['manual_pc_number'] ?? null,
+                // manual_pc_number is owned by the mammographer; the nurse form no longer touches it.
                 'emirates_id'     => $data['emirates_id'] ?? null,
                 'full_name'      => $data['full_name'],
                 'dob'            => $data['dob'] ?? null,
@@ -130,7 +129,6 @@ class RecordController extends Controller
     {
         $rules = [
             'full_name'          => ['required', 'string', 'max:255'],
-            'manual_pc_number'   => ['nullable', 'string', 'max:60'],
             'emirates_id'        => ['nullable', 'string', 'max:30'],
             'dob'                => ['nullable', 'date'],
             'nationality'        => ['nullable', 'string', 'max:255'],
