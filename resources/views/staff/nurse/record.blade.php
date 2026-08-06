@@ -98,8 +98,7 @@
             <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:14px;">
                 {{-- Auto registration number (was "PC Number") --}}
                 <label style="{{ $lbl }}">{{ __('pc.reg_number') }}<input value="{{ $editing ? $record->ref_no : __('pc.pc_auto') }}" readonly style="{{ $inp }}background:#FAF4F7;color:#9A8F97;" /></label>
-                {{-- New manual PC Number, entered by the mammographer --}}
-                <label style="{{ $lbl }}">{{ __('pc.pc_number') }}<input name="manual_pc_number" value="{{ old('manual_pc_number', $patient->manual_pc_number) }}" placeholder="—" style="{{ $inp }}" /><span style="display:block;margin-top:4px;font-size:11px;font-weight:500;color:#9A8F97;">{{ __('pc.pc_number_help') }}</span></label>
+                {{-- Manual PC Number is entered later by the mammographer, so it is not shown in the nurse form. --}}
                 {{-- Emirates ID (auto-filled by the reader, or entered manually) --}}
                 <label style="{{ $lbl }}">{{ __('pc.emirates_id') }}<input name="emirates_id" value="{{ old('emirates_id', $patient->emirates_id) }}" placeholder="784-____-_______-_" style="{{ $inp }}" /></label>
                 <label style="{{ $lbl }}">{{ __('pc.full_name') }} *<input name="full_name" value="{{ old('full_name', $patient->full_name) }}" required style="{{ $inp }}" /></label>
