@@ -76,6 +76,74 @@ input, select, textarea, button { font-family: inherit; }
     cursor: pointer;
 }
 
+/* ---- Responsive staff shell (collapsible sidebar on tablet/phone) ---- */
+.pc-shell { min-height: 100vh; display: flex; }
+.pc-sidebar {
+    width: 262px; flex-shrink: 0; background: #2A1622; color: #fff;
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh; z-index: 50;
+}
+.pc-burger, .pc-overlay, .pc-sidebar-close { display: none; }
+
+/* Below 1024px the sidebar slides in over the content. */
+@media (max-width: 1023px) {
+    /* Closed by default; the open transform is driven inline via Alpine (:style),
+       which reliably wins the cascade regardless of Tailwind's layer ordering. */
+    .pc-sidebar {
+        position: fixed; inset-inline-start: 0; top: 0; height: 100vh;
+        transform: translateX(-100%);
+        box-shadow: 0 0 40px rgba(0, 0, 0, .35);
+    }
+    [dir="rtl"] .pc-sidebar { transform: translateX(100%); }
+    .pc-overlay.open {
+        display: block; position: fixed; inset: 0;
+        background: rgba(20, 10, 16, .5); z-index: 40;
+    }
+    .pc-burger {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 40px; height: 40px; flex-shrink: 0; cursor: pointer;
+        background: #F7EEF3; border: none; border-radius: 10px;
+        font-size: 18px; color: #6B4257;
+    }
+    .pc-sidebar-close {
+        display: inline-flex; align-items: center; justify-content: center;
+        width: 32px; height: 32px; cursor: pointer; margin-inline-start: auto;
+        background: rgba(255, 255, 255, .08); border: none; border-radius: 8px;
+        color: #E9CBD9; font-size: 16px;
+    }
+    .pc-topbar { padding: 12px 16px !important; }
+    .pc-main-pad { padding: 20px 16px 50px !important; }
+}
+@media (max-width: 560px) {
+    .pc-clinic-chip { display: none; }
+}
+
+/* Responsive column grids — collapse as the viewport narrows. */
+.pc-cols-2, .pc-cols-3, .pc-cols-4, .pc-cols-5 { display: grid; }
+.pc-cols-2 { grid-template-columns: repeat(2, 1fr); }
+.pc-cols-3 { grid-template-columns: repeat(3, 1fr); }
+.pc-cols-4 { grid-template-columns: repeat(4, 1fr); }
+.pc-cols-5 { grid-template-columns: repeat(5, 1fr); }
+@media (max-width: 1080px) {
+    .pc-cols-4, .pc-cols-5 { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 820px) {
+    .pc-cols-3, .pc-cols-4, .pc-cols-5 { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px) {
+    .pc-cols-2, .pc-cols-3, .pc-cols-4, .pc-cols-5 { grid-template-columns: 1fr; }
+}
+
+/* Stack an inline-templated grid into a single column on small screens
+   (keeps its desktop grid-template-columns from the inline style). */
+@media (max-width: 640px) {
+    .pc-stack-sm { grid-template-columns: 1fr !important; }
+}
+
+/* Wide list tables scroll horizontally (rather than squashing) on narrow screens. */
+.pc-tbl-wrap { overflow-x: auto; }
+.pc-tbl { min-width: 720px; }
+
 /* Hover lift for hub role cards (was style-hover in the prototype runtime). */
 .pc-card-hover {
     transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;

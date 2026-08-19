@@ -95,7 +95,7 @@
                     <span x-show="eidLoading" x-cloak>{{ __('pc.reading_card') }}</span>
                 </button>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:14px;">
+            <div class="pc-cols-3" style="gap:14px;">
                 {{-- Auto registration number (was "PC Number") --}}
                 <label style="{{ $lbl }}">{{ __('pc.reg_number') }}<input value="{{ $editing ? $record->ref_no : __('pc.pc_auto') }}" readonly style="{{ $inp }}background:#FAF4F7;color:#9A8F97;" /></label>
                 {{-- Manual PC Number is entered later by the mammographer, so it is not shown in the nurse form. --}}
@@ -137,7 +137,7 @@
         {{-- 2. Personal history --}}
         <div style="{{ $card }}">
             {!! $sectionHead(2, __('pc.sec_personal')) !!}
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;">
+            <div class="pc-cols-2" style="gap:6px 24px;">
                 @foreach ($personalItems as $pi)
                     @php($ansOld = old("personal.$pi", $ph[$pi] ?? 'no'))
                     @php($noteOld = old("personal_notes.$pi", $phn[$pi] ?? ''))
@@ -169,7 +169,7 @@
                 @foreach (['deg1'=>__('pc.deg1'),'deg2'=>__('pc.deg2'),'deg3'=>__('pc.deg3')] as $dk=>$dl)
                     @php($fRel = old("family.$dk.relationship", $fh[$dk]['relationship'] ?? ''))
                     @php($fAge = old("family.$dk.age", $fh[$dk]['age'] ?? ''))
-                    <div style="display:grid;grid-template-columns:96px 1fr 170px;gap:14px;align-items:center;border:1px solid #EFE2EA;border-radius:12px;padding:14px;background:#FAF4F7;">
+                    <div class="pc-stack-sm" style="display:grid;grid-template-columns:96px 1fr 170px;gap:14px;align-items:center;border:1px solid #EFE2EA;border-radius:12px;padding:14px;background:#FAF4F7;">
                         <div style="font-size:13px;font-weight:700;color:#E6017E;">{{ $dl }}</div>
                         <div style="font-size:11.5px;font-weight:600;color:#6B4257;">{{ __('pc.relationship') }}
                             <div style="display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:8px;">
@@ -193,7 +193,7 @@
         <div style="{{ $card }}">
             {!! $sectionHead(4, __('pc.prev_screening')) !!}
             <input type="hidden" name="cbe_result" :value="result" />
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:end;">
+            <div class="pc-cols-2" style="gap:16px;align-items:end;">
                 <label style="{{ $lbl }}">{{ __('pc.last_mammo') }}<input type="date" name="last_mammogram" value="{{ old('last_mammogram', optional($record->last_mammogram)->toDateString()) }}" style="{{ $inp }}" /></label>
                 <div style="{{ $lbl }}">{{ __('pc.last_mammo_report') }}
                     <div style="display:flex;gap:10px;margin-top:7px;">
@@ -202,7 +202,7 @@
                     </div>
                 </div>
             </div>
-            <div x-show="result==='abnormal'" x-cloak style="margin-top:16px;padding:16px;background:#FBE4E4;border:1px solid #F3C4C4;border-radius:12px;display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div x-show="result==='abnormal'" x-cloak class="pc-stack-sm" style="margin-top:16px;padding:16px;background:#FBE4E4;border:1px solid #F3C4C4;border-radius:12px;display:grid;grid-template-columns:1fr 1fr;gap:14px;">
                 <label style="font-size:12.5px;font-weight:600;color:#9A2E2E;">{{ __('pc.refer_mammo') }}<input type="date" name="refer_mammo_date" value="{{ old('refer_mammo_date', optional($rMammo?->referral_date)->toDateString()) }}" style="{{ $inp }}border-color:#E7B7B7;" /></label>
                 <label style="font-size:12.5px;font-weight:600;color:#9A2E2E;">{{ __('pc.hospital') }}<input name="refer_mammo_hospital" value="{{ old('refer_mammo_hospital', $rMammo?->hospital) }}" style="{{ $inp }}border-color:#E7B7B7;" /></label>
                 <label style="font-size:12.5px;font-weight:600;color:#9A2E2E;">{{ __('pc.refer_uls') }}<input type="date" name="refer_uls_date" value="{{ old('refer_uls_date', optional($rUls?->referral_date)->toDateString()) }}" style="{{ $inp }}border-color:#E7B7B7;" /></label>
@@ -225,7 +225,7 @@
 
             {{-- Patient signature (required before submission) --}}
             <input type="hidden" name="patient_signature" id="sig_input" value="{{ old('patient_signature', $record->patient_signature) }}" />
-            <div style="margin-top:18px;display:grid;grid-template-columns:1fr 200px;gap:16px;align-items:start;">
+            <div class="pc-stack-sm" style="margin-top:18px;display:grid;grid-template-columns:1fr 200px;gap:16px;align-items:start;">
                 <div>
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
                         <span style="{{ $lbl }}">{{ __('pc.sign_here') }} *</span>

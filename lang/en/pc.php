@@ -412,6 +412,8 @@ return [
     'case_completed_ok' => 'Case marked as completed.',
     'patient_registered_ok' => 'Patient registered and assigned to the nurse.',
     'select_nurse'     => 'Select a nurse',
+    'menu'             => 'Menu',
+    'close'            => 'Close',
     'record_details'      => 'Record details',
     'sec_repro'           => 'Reproductive & screening history',
     'signed_at'           => 'Signed on',

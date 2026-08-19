@@ -411,6 +411,8 @@ return [
     'case_completed_ok' => 'تم وضع علامة اكتمال الحالة.',
     'patient_registered_ok' => 'تم تسجيل المريضة وإسنادها للممرضة.',
     'select_nurse'     => 'اختر ممرضة',
+    'menu'             => 'القائمة',
+    'close'            => 'إغلاق',
     'record_details'      => 'تفاصيل السجل',
     'sec_repro'           => 'التاريخ التناسلي والفحص',
     'signed_at'           => 'تاريخ التوقيع',

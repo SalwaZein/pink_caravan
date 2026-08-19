@@ -85,17 +85,25 @@
     $marginStart = $isRtl ? 'margin-right:auto;' : 'margin-left:auto;';
 @endphp
 
-<div style="min-height:100vh;display:flex;">
-    {{-- Sidebar --}}
-    <div style="width:262px;flex-shrink:0;background:#2A1622;color:#fff;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;">
-        <div style="padding:22px 22px 18px;border-bottom:1px solid rgba(255,255,255,.09);">
-            <a href="{{ url('/') }}" style="display:flex;align-items:center;gap:11px;text-decoration:none;color:#fff;">
+<div class="pc-shell" x-data="{ sidebar: false, mobile: window.matchMedia('(max-width: 1023px)').matches }"
+     @resize.window="mobile = window.matchMedia('(max-width: 1023px)').matches; if (!mobile) sidebar = false">
+    {{-- Dimmed overlay behind the drawer (tablet/phone only) --}}
+    <div class="pc-overlay" :class="{ open: sidebar }" @click="sidebar=false"></div>
+
+    {{-- Sidebar (static on desktop, slide-in drawer below 1024px).
+         The open transform is set inline so it always wins the cascade. --}}
+    <div class="pc-sidebar" :class="{ open: sidebar }"
+         :style="(mobile && sidebar) ? { transform: 'translateX(0)' } : {}"
+         @keydown.escape.window="sidebar=false">
+        <div style="padding:22px 22px 18px;border-bottom:1px solid rgba(255,255,255,.09);display:flex;align-items:center;gap:11px;">
+            <a href="{{ url('/') }}" style="display:flex;align-items:center;gap:11px;text-decoration:none;color:#fff;flex:1;min-width:0;">
                 <img src="{{ asset('assets/ribbon-ring.png') }}" alt="" style="width:34px;height:34px;" />
                 <div>
                     <div style="font-weight:700;font-size:15px;letter-spacing:-.01em;">Pink Caravan</div>
                     <div style="font-size:11px;color:#E79BC2;font-weight:500;">{{ __('pc.platform') }}</div>
                 </div>
             </a>
+            <button type="button" class="pc-sidebar-close" @click="sidebar=false" aria-label="{{ __('pc.close') }}">✕</button>
         </div>
 
         <div class="pc-scroll" style="padding:14px;flex:1;overflow-y:auto;">
@@ -143,18 +151,21 @@
 
     {{-- Main --}}
     <div style="flex:1;min-width:0;display:flex;flex-direction:column;background:#F4EEF1;">
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 30px;background:#fff;border-bottom:1px solid #EFE2EA;position:sticky;top:0;z-index:15;">
-            <div>
-                <div style="font-size:12px;color:#9A8F97;font-weight:500;">{{ $conf['label'] }}</div>
-                <div style="font-size:21px;font-weight:700;letter-spacing:-.01em;">{{ $current['label'] }}</div>
+        <div class="pc-topbar" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 30px;background:#fff;border-bottom:1px solid #EFE2EA;position:sticky;top:0;z-index:15;">
+            <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+                <button type="button" class="pc-burger" @click="sidebar=true" aria-label="{{ __('pc.menu') }}">☰</button>
+                <div style="min-width:0;">
+                    <div style="font-size:12px;color:#9A8F97;font-weight:500;">{{ $conf['label'] }}</div>
+                    <div style="font-size:21px;font-weight:700;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ $current['label'] }}</div>
+                </div>
             </div>
-            <div style="display:flex;align-items:center;gap:12px;">
-                <div style="display:flex;align-items:center;gap:8px;background:#F7EEF3;border-radius:10px;padding:8px 13px;font-size:13.5px;font-weight:600;color:#6B4257;"><span>📍</span>{{ $userClinic }}</div>
+            <div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">
+                <div class="pc-clinic-chip" style="display:flex;align-items:center;gap:8px;background:#F7EEF3;border-radius:10px;padding:8px 13px;font-size:13.5px;font-weight:600;color:#6B4257;"><span>📍</span>{{ $userClinic }}</div>
                 <x-lang-toggle variant="staff" />
             </div>
         </div>
 
-        <div class="pc-scroll" style="flex:1;overflow-y:auto;padding:28px 30px 60px;">
+        <div class="pc-scroll pc-main-pad" style="flex:1;overflow-y:auto;padding:28px 30px 60px;">
             {{ $slot }}
         </div>
     </div>
