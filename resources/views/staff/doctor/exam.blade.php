@@ -36,7 +36,7 @@
         <input type="hidden" name="cbe_result" :value="cbe" />
 
         {{-- Header (pulled from the patient record) --}}
-        <div style="{{ $card }}padding:20px 24px;margin-bottom:16px;display:grid;grid-template-columns:repeat(5, 1fr);gap:16px;">
+        <div class="pc-cols-5" style="{{ $card }}padding:20px 24px;margin-bottom:16px;gap:16px;">
             <div><div style="font-size:11px;color:#9A8F97;font-weight:600;">{{ __('pc.ref_no_col') }}</div><div style="font-size:14px;font-weight:700;margin-top:2px;">{{ $record->ref_no }}</div></div>
             <div><div style="font-size:11px;color:#9A8F97;font-weight:600;">{{ __('pc.patient_col') }}</div><div style="font-size:14px;font-weight:700;margin-top:2px;">{{ $record->patient->full_name }}</div></div>
             <div><div style="font-size:11px;color:#9A8F97;font-weight:600;">{{ __('pc.age') }}</div><div style="font-size:14px;font-weight:700;margin-top:2px;">{{ $record->patient->dob?->age ?? '—' }}</div></div>
@@ -59,7 +59,7 @@
 
             <div x-show="showForm1" x-cloak style="margin-top:16px;border-top:1px solid #F3E7EE;padding-top:16px;">
                 {{-- Demographics + reproductive --}}
-                <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:14px;margin-bottom:16px;">
+                <div class="pc-cols-4" style="gap:14px;margin-bottom:16px;">
                     <div><div style="{{ $sumLbl }}">{{ __('pc.pc_number') }}</div><div style="{{ $sumVal }}">{{ $patient->manual_pc_number ?: '—' }}</div></div>
                     <div><div style="{{ $sumLbl }}">{{ __('pc.nationality') }}</div><div style="{{ $sumVal }}">{{ $patient->nationality ?: '—' }}</div></div>
                     <div><div style="{{ $sumLbl }}">{{ __('pc.marital') }}</div><div style="{{ $sumVal }}">{{ $patient->marital_status ? __('pc.'.$patient->marital_status) : '—' }}</div></div>
@@ -70,7 +70,7 @@
                     <div><div style="{{ $sumLbl }}">{{ __('pc.last_mammo_report') }}</div><div style="{{ $sumVal }}">{{ $record->cbe_result ? __('pc.'.$record->cbe_result) : '—' }}</div></div>
                 </div>
 
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div class="pc-cols-2" style="gap:16px;">
                     {{-- Personal history (positive findings only) --}}
                     <div>
                         <div style="{{ $sumLbl }}">{{ __('pc.sec_personal') }}</div>
@@ -102,7 +102,7 @@
             </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+        <div class="pc-cols-2" style="gap:16px;margin-bottom:16px;">
             {{-- Symptoms --}}
             <div style="{{ $card }}padding:20px 22px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><h3 style="margin:0;font-size:15px;font-weight:700;">{{ __('pc.symptoms') }}</h3><div style="display:flex;gap:16px;font-size:11px;font-weight:700;color:#9A8F97;"><span>{{ __('pc.right') }}</span><span>{{ __('pc.left') }}</span></div></div>

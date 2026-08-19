@@ -20,7 +20,15 @@ class QrCode
         $svg = (new Writer($renderer))->writeString($text);
 
         // Drop the XML declaration so the SVG embeds cleanly inside HTML.
-        return preg_replace('/^<\?xml[^>]*\?>\s*/', '', $svg);
+        $svg = preg_replace('/^<\?xml[^>]*\?>\s*/', '', $svg);
+
+        // Bacon hard-codes width/height (px) on the <svg>, so it ignores its container and
+        // overflows. Strip them and let it scale to the box via the preserved viewBox.
+        $svg = preg_replace('/(<svg\b[^>]*?)\s+width="[^"]*"/i', '$1', $svg, 1);
+        $svg = preg_replace('/(<svg\b[^>]*?)\s+height="[^"]*"/i', '$1', $svg, 1);
+        $svg = preg_replace('/<svg\b/i', '<svg width="100%" height="100%" preserveAspectRatio="xMidYMid meet" style="display:block"', $svg, 1);
+
+        return $svg;
     }
 
     /** The public verification URL a report's QR should point at (scan → auto-verify). */
