@@ -50,7 +50,7 @@ class DashboardService
         $total     = $ids->count();
         // "Completed" screening includes records whose report has since been sent.
         $completed = (clone self::baseQuery($filters, $clinicIds))->whereIn('status', ['completed', 'report_sent'])->count();
-        $pending   = (clone self::baseQuery($filters, $clinicIds))->whereIn('status', ['submitted', 'assigned', 'in_review'])->count();
+        $pending   = (clone self::baseQuery($filters, $clinicIds))->whereIn('status', ['submitted', 'assigned', 'in_review', 'returned'])->count();
 
         // Results come from the doctor's exam.
         $resultQuery = fn (string $res) => \App\Models\ClinicalExamination::whereIn('record_id', $ids)->where('result', $res)->count();

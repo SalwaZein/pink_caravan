@@ -23,7 +23,10 @@ class ExamController extends Controller
     {
         $this->authorizeDoctor($record);
 
-        if ($record->status === PatientHistoryRecord::ASSIGNED) {
+        // Only pull a case into review while it is actually assigned to this doctor
+        // (not, say, one the admin has since routed to a mammographer).
+        if ($record->status === PatientHistoryRecord::ASSIGNED
+            && $record->assigned_role === PatientHistoryRecord::ROLE_DOCTOR) {
             $record->update(['status' => PatientHistoryRecord::IN_REVIEW]);
         }
 
@@ -42,8 +45,10 @@ class ExamController extends Controller
     {
         $this->authorizeDoctor($record);
 
-        if ($record->status === PatientHistoryRecord::COMPLETED) {
-            return redirect()->route('doctor.assigned')->with('status', __('pc.record_locked'));
+        // Once the doctor has submitted the exam it is locked, even after the admin
+        // routes the case onward (returned → mammographer → completed).
+        if ($record->examination?->status === 'submitted') {
+            return redirect()->route('doctor.completed')->with('status', __('pc.record_locked'));
         }
 
         $isSubmit = $request->input('action') === 'submit';
@@ -84,7 +89,8 @@ class ExamController extends Controller
             $exam->save();
 
             if ($isSubmit) {
-                $record->update(['status' => PatientHistoryRecord::COMPLETED]);
+                // Exam done → the case returns to the clinic admin to be closed or routed on.
+                $record->update(['status' => PatientHistoryRecord::RETURNED]);
                 ReportService::generate($record->fresh(['patient', 'examination', 'referrals']));
                 Audit::log('exam.submitted', $record, "{$record->ref_no} — {$result}");
             } else {
@@ -103,7 +109,9 @@ class ExamController extends Controller
     {
         $this->authorizeDoctor($record);
 
-        abort_unless(in_array($record->status, [PatientHistoryRecord::COMPLETED, PatientHistoryRecord::REPORT_SENT], true), 404);
+        // Downloadable once the doctor has submitted the exam (report generated), regardless
+        // of where the admin has since routed the case.
+        abort_unless($record->examination?->status === 'submitted', 404);
 
         $report = ReportService::ensure($record->loadMissing('patient', 'examination', 'referrals', 'clinic'));
         Audit::log('report.downloaded', $record, $record->ref_no);

@@ -16,9 +16,10 @@ class RecordPresenter
     {
         return [
             'draft'     => ['label' => __('pc.draft'),           'c' => '#6B4257', 'bg' => '#F1E7ED'],
-            'submitted' => ['label' => __('pc.awaiting_doctor'), 'c' => '#2A6FDB', 'bg' => '#E3ECFB'],
-            'assigned'  => ['label' => __('pc.awaiting_doctor'), 'c' => '#2A6FDB', 'bg' => '#E3ECFB'],
+            'submitted' => ['label' => __('pc.unassigned'),      'c' => '#2A6FDB', 'bg' => '#E3ECFB'],
+            'assigned'  => ['label' => __('pc.assigned'),        'c' => '#2A6FDB', 'bg' => '#E3ECFB'],
             'in_review' => ['label' => __('pc.in_review'),       'c' => '#7E4CC4', 'bg' => '#EEE6FA'],
+            'returned'  => ['label' => __('pc.returned'),        'c' => '#B25E00', 'bg' => '#FBEEDD'],
             'completed' => ['label' => __('pc.completed'),       'c' => '#2E7D32', 'bg' => '#E4F4EF'],
             'report_sent' => ['label' => __('pc.status_report_sent'), 'c' => '#0E7C6B', 'bg' => '#DFF3EF'],
         ];

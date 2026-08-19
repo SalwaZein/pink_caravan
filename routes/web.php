@@ -101,6 +101,8 @@ Route::middleware(['auth', 'role:clinic_admin'])->group(function () {
 
     Route::post('/clinic/assign', [AssignmentController::class, 'assign'])
         ->middleware('can:assign_doctors')->name('clinic.assign.store');
+    Route::post('/clinic/complete/{record}', [AssignmentController::class, 'complete'])
+        ->middleware('can:assign_doctors')->name('clinic.complete');
 });
 
 // ---- Report document (auth; staff who examined/manage/report on the record) ----

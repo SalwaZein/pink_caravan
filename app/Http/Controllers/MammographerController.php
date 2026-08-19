@@ -19,12 +19,14 @@ use Illuminate\View\View;
  */
 class MammographerController extends Controller
 {
-    /** Records that have completed the clinical exam and are ready for the report. */
+    /** Cases the clinic admin has assigned to this mammographer. */
     public function queue(): View
     {
         $records = $this->scopedQuery()
             ->with('patient', 'doctor', 'examination')
-            ->whereIn('status', [PatientHistoryRecord::COMPLETED, PatientHistoryRecord::REPORT_SENT])
+            ->where('assigned_role', PatientHistoryRecord::ROLE_MAMMOGRAPHER)
+            ->where('mammographer_id', auth()->id())
+            ->whereIn('status', [PatientHistoryRecord::ASSIGNED, PatientHistoryRecord::IN_REVIEW])
             ->latest()->get();
 
         return view('staff.mammographer.queue', [
@@ -34,13 +36,14 @@ class MammographerController extends Controller
         ]);
     }
 
-    /** Open the manage-report page for a record (claims it as this mammographer). */
+    /** Open the manage-report page for a case the admin assigned to this mammographer. */
     public function edit(PatientHistoryRecord $record): View
     {
-        $this->authorizeScope($record);
+        $this->authorizeAssigned($record);
 
-        if (! $record->mammographer_id) {
-            $record->update(['mammographer_id' => auth()->id()]);
+        // Opening an assigned case marks it as being worked on.
+        if ($record->status === PatientHistoryRecord::ASSIGNED) {
+            $record->update(['status' => PatientHistoryRecord::IN_REVIEW]);
         }
 
         $record->load('patient', 'clinic', 'doctor', 'nurse', 'examination');
@@ -56,7 +59,7 @@ class MammographerController extends Controller
     /** Save patient/PC details and, optionally, upload the mammogram report file. */
     public function update(Request $request, PatientHistoryRecord $record): RedirectResponse
     {
-        $this->authorizeScope($record);
+        $this->authorizeAssigned($record);
 
         $data = $request->validate([
             'manual_pc_number' => ['nullable', 'string', 'max:60'],
@@ -101,16 +104,16 @@ class MammographerController extends Controller
     /** Send the uploaded mammogram report to the patient (delivery stubbed like OTP/SMS). */
     public function send(PatientHistoryRecord $record): RedirectResponse
     {
-        $this->authorizeScope($record);
+        $this->authorizeAssigned($record);
 
         if (! $record->mammogram_report_path) {
             return back()->with('status', __('pc.report_needed_first'));
         }
 
+        // Report sent → the case returns to the clinic admin to be closed or routed on.
         $record->update([
-            'mammographer_id' => $record->mammographer_id ?? auth()->id(),
-            'report_sent_at'  => now(),
-            'status'          => PatientHistoryRecord::REPORT_SENT,
+            'report_sent_at' => now(),
+            'status'         => PatientHistoryRecord::RETURNED,
         ]);
 
         // Notify the patient across email + SMS + WhatsApp with a secure portal link.
@@ -161,5 +164,24 @@ class MammographerController extends Controller
         $clinicIds = auth()->user()->clinicIds();
         // A permitted user with no clinic assignment (e.g. super admin) sees everything.
         abort_unless(empty($clinicIds) || in_array($record->clinic_id, $clinicIds, true), 403);
+    }
+
+    /**
+     * The case must be in this user's clinic AND assigned to them as the mammographer.
+     * A clinic-less super admin (permission only, no clinic) keeps full access.
+     */
+    private function authorizeAssigned(PatientHistoryRecord $record): void
+    {
+        $this->authorizeScope($record);
+
+        if (empty(auth()->user()->clinicIds())) {
+            return;
+        }
+
+        abort_unless(
+            $record->assigned_role === PatientHistoryRecord::ROLE_MAMMOGRAPHER
+                && $record->mammographer_id === auth()->id(),
+            403,
+        );
     }
 }

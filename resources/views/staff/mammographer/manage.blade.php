@@ -5,7 +5,7 @@
     $inp = 'display:block;width:100%;margin-top:5px;padding:10px 11px;border:1px solid #E3D2DC;border-radius:9px;font-size:13.5px;';
     $lbl = 'font-size:12.5px;font-weight:600;color:#6B4257;';
     $card = 'background:#fff;border:1px solid #EFE2EA;border-radius:16px;padding:24px 26px;margin-bottom:16px;box-shadow:0 3px 14px rgba(120,60,90,.05);';
-    $sent = $record->status === \App\Models\PatientHistoryRecord::REPORT_SENT;
+    $sent = $record->report_sent_at !== null;
 @endphp
 
 @section('content')
@@ -31,7 +31,8 @@
                 <div style="margin-top:3px;"><span style="font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;color:{{ $res['c'] }};background:{{ $res['bg'] }};">{{ $res['label'] }}</span></div>
             </div>
             <div><div style="font-size:11px;color:#9A8F97;font-weight:600;">{{ __('pc.status') }}</div>
-                <div style="margin-top:3px;"><span style="font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;color:{{ $sent ? '#0E7C6B' : '#2E7D32' }};background:{{ $sent ? '#DFF3EF' : '#E4F4EF' }};">{{ $sent ? __('pc.status_report_sent') : __('pc.completed') }}</span></div>
+                @php($stMeta = \App\Support\RecordPresenter::statusMeta()[$record->status] ?? \App\Support\RecordPresenter::statusMeta()['in_review'])
+                <div style="margin-top:3px;"><span style="font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;color:{{ $sent ? '#0E7C6B' : $stMeta['c'] }};background:{{ $sent ? '#DFF3EF' : $stMeta['bg'] }};">{{ $sent ? __('pc.status_report_sent') : $stMeta['label'] }}</span></div>
             </div>
             <div style="grid-column:1 / -1;display:flex;gap:26px;border-top:1px solid #F3E7EE;padding-top:14px;">
                 <div><div style="font-size:11px;color:#9A8F97;font-weight:600;">{{ __('pc.managed_by') }}</div><div style="font-size:13px;font-weight:600;margin-top:2px;">{{ $record->mammographer?->name ?? '—' }}</div></div>

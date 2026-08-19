@@ -62,8 +62,8 @@
             'doctor/assigned'     => $R()->where('assigned_doctor_id', $authUser->id)->whereIn('status', ['assigned', 'in_review'])->count(),
             'nurse/queue'         => $cids ? $R()->whereIn('clinic_id', $cids)->whereDate('created_at', today())->count() : 0,
             'clinic/queue'        => $cids ? $R()->whereIn('clinic_id', $cids)->count() : 0,
-            'clinic/assign'       => $cids ? $R()->whereIn('clinic_id', $cids)->where('status', 'submitted')->count() : 0,
-            'mammographer/queue'  => $cids ? $R()->whereIn('clinic_id', $cids)->whereIn('status', ['completed', 'report_sent'])->count() : 0,
+            'clinic/assign'       => $cids ? $R()->whereIn('clinic_id', $cids)->whereIn('status', ['submitted', 'returned'])->count() : 0,
+            'mammographer/queue'  => $R()->where('assigned_role', 'mammographer')->where('mammographer_id', $authUser->id)->whereIn('status', ['assigned', 'in_review'])->count(),
             default               => 0,
         };
         return $n > 0 ? (string) $n : null;
