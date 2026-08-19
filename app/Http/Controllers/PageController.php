@@ -150,6 +150,19 @@ class PageController extends Controller
         ]));
     }
 
+    /** Read-only detail of everything captured for a case (nurse Form 3 + exam, if done). */
+    public function clinicRecord(PatientHistoryRecord $record): View
+    {
+        $clinicIds = auth()->user()->clinicIds();
+        abort_unless(empty($clinicIds) || in_array($record->clinic_id, $clinicIds, true), 403);
+
+        $record->load('patient', 'clinic', 'nurse', 'doctor', 'mammographer', 'examination', 'report', 'referrals');
+
+        return view('staff.clinic.record', $this->staff('clinic', 'clinic/queue', [
+            'record' => $record,
+        ]));
+    }
+
     public function clinicReports(): View
     {
         $clinicIds = auth()->user()->clinicIds();

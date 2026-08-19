@@ -36,6 +36,7 @@
                     @endif
                 </div>
                 <span style="font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;color:{{ $st['c'] }};background:{{ $st['bg'] }};">{{ $st['label'] }}</span>
+                <a href="{{ route('clinic.record.show', $r->id) }}" role="button" style="cursor:pointer;font-size:12.5px;font-weight:700;color:#6B4257;padding:8px 12px;border:1px solid #E3D2DC;border-radius:9px;text-decoration:none;white-space:nowrap;">{{ __('pc.view') }}</a>
 
                 {{-- Assign / reassign to a doctor or a mammographer in this clinic --}}
                 <form method="POST" action="{{ route('clinic.assign.store') }}" style="display:flex;gap:8px;align-items:center;margin:0;flex-wrap:wrap;">

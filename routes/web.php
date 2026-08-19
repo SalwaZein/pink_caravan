@@ -101,6 +101,7 @@ Route::middleware(['auth', 'role:clinic_admin'])->group(function () {
         ->middleware('can:register_patients')->name('clinic.register.store');
     Route::get('/clinic/assign',   [PageController::class, 'clinicAssign'])->name('clinic.assign');
     Route::get('/clinic/reports',  [PageController::class, 'clinicReports'])->name('clinic.reports');
+    Route::get('/clinic/record/{record}', [PageController::class, 'clinicRecord'])->name('clinic.record.show');
 
     Route::post('/clinic/assign', [AssignmentController::class, 'assign'])
         ->middleware('can:assign_doctors')->name('clinic.assign.store');

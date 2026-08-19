@@ -231,5 +231,9 @@ class BusinessFeedbackTest extends TestCase
         // The nurse picks it up from the queue and continues it, ID data pre-filled.
         $this->actingAs($nurse)->get("/nurse/record/{$record->id}/edit")
             ->assertOk()->assertSee('Aisha Al Marri')->assertSee('784-1990-1234567-1');
+
+        // The clinic admin can view the entered data read-only.
+        $this->actingAs($admin)->get("/clinic/record/{$record->id}")
+            ->assertOk()->assertSee('Aisha Al Marri')->assertSee('784-1990-1234567-1');
     }
 }
