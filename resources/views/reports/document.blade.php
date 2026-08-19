@@ -170,10 +170,13 @@
           </div>
           <div style="font-size: 11.5px; color: #9A8F97; margin-top: 12px;">🔐 <span style="unicode-bidi: isolate;">{{ $vm['f']['attested'] }}</span> <span style="unicode-bidi: isolate; direction: ltr;">{{ $vm['data']['attestedAt'] }}</span></div>
         </div>
-        <div style="border: 1px solid #F0E1E9; border-radius: 12px; padding: 12px 14px; background: #FAF4F7; align-self: start; margin-top: 25px;">
-          <div style="font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #B7A9B2;">{{ $vm['f']['verify'] }}</div>
-          <div style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 16px; font-weight: 700; letter-spacing: .06em; color: #E6017E; margin-top: 5px;">{{ $vm['data']['verifyCode'] }}</div>
-          <div style="font-size: 11px; color: #9A8F97; margin-top: 5px; line-height: 1.45;">{{ $vm['f']['verifyHint'] }}</div>
+        <div style="border: 1px solid #F0E1E9; border-radius: 12px; padding: 12px 14px; background: #FAF4F7; align-self: start; margin-top: 25px; display: flex; gap: 14px; align-items: center;">
+          <div style="flex-shrink: 0; width: 92px; height: 92px; background: #fff; border: 1px solid #F0E1E9; border-radius: 8px; padding: 5px;">{!! $vm['data']['qr'] !!}</div>
+          <div>
+            <div style="font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: #B7A9B2;">{{ $vm['f']['verify'] }}</div>
+            <div style="font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 16px; font-weight: 700; letter-spacing: .06em; color: #E6017E; margin-top: 5px;">{{ $vm['data']['verifyCode'] }}</div>
+            <div style="font-size: 11px; color: #9A8F97; margin-top: 5px; line-height: 1.45;">{{ $vm['f']['verifyHint'] }}</div>
+          </div>
         </div>
       </div>
     </div>
