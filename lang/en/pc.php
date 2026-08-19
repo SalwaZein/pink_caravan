@@ -168,7 +168,7 @@ return [
     'register_new' => 'Register new patient',
     'awaiting_doctor' => 'Awaiting doctor',
     // Admin case-routing workflow
-    'unassigned'      => 'Unassigned',
+    'unassigned'      => 'Waiting to assign',
     'assigned'        => 'Assigned',
     'in_progress'     => 'In progress',
     'returned'        => 'Awaiting admin',
