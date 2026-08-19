@@ -203,4 +203,33 @@ class BusinessFeedbackTest extends TestCase
         $record->refresh();
         $this->assertSame('completed', $record->status);
     }
+
+    public function test_clinic_admin_registers_patient_from_id_and_hands_to_nurse(): void
+    {
+        $admin = $this->user('mariam.s@focp.ae');
+        $nurse = $this->user('s.nuaimi@focp.ae');
+
+        // Clinic admin captures the Emirates-ID demographics and assigns a nurse.
+        $this->actingAs($admin)->post('/clinic/register', [
+            'full_name'   => 'Aisha Al Marri',
+            'emirates_id' => '784-1990-1234567-1',
+            'dob'         => '1990-05-14',
+            'nationality' => 'Emirati',
+            'emirate'     => 'dubai',
+            'mobile1'     => '+971501112233',
+            'nurse_id'    => $nurse->id,
+        ])->assertRedirect(route('clinic.queue'));
+
+        $record = PatientHistoryRecord::latest('id')->firstOrFail();
+        $this->assertSame('draft', $record->status);
+        $this->assertSame($nurse->id, $record->nurse_id);
+        $this->assertSame('Aisha Al Marri', $record->patient->full_name);
+        $this->assertSame('784-1990-1234567-1', $record->patient->emirates_id);
+        $this->assertSame('Emirati', $record->patient->nationality);
+        $this->assertSame($admin->id, $record->patient->registered_by);
+
+        // The nurse picks it up from the queue and continues it, ID data pre-filled.
+        $this->actingAs($nurse)->get("/nurse/record/{$record->id}/edit")
+            ->assertOk()->assertSee('Aisha Al Marri')->assertSee('784-1990-1234567-1');
+    }
 }

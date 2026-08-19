@@ -4,6 +4,7 @@ use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ClinicController;
+use App\Http\Controllers\ClinicPatientController;
 use App\Http\Controllers\EmiratesIdController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExportController;
@@ -96,6 +97,8 @@ Route::middleware(['auth', 'can:manage_mammograms'])->group(function () {
 Route::middleware(['auth', 'role:clinic_admin'])->group(function () {
     Route::get('/clinic/queue',    [PageController::class, 'clinicQueue'])->name('clinic.queue');
     Route::get('/clinic/register', [PageController::class, 'clinicRegister'])->name('clinic.register');
+    Route::post('/clinic/register', [ClinicPatientController::class, 'store'])
+        ->middleware('can:register_patients')->name('clinic.register.store');
     Route::get('/clinic/assign',   [PageController::class, 'clinicAssign'])->name('clinic.assign');
     Route::get('/clinic/reports',  [PageController::class, 'clinicReports'])->name('clinic.reports');
 

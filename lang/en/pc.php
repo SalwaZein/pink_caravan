@@ -410,6 +410,8 @@ return [
     'record_locked'    => 'This record is already submitted and can no longer be edited.',
     'assigned_ok'      => 'Case assigned.',
     'case_completed_ok' => 'Case marked as completed.',
+    'patient_registered_ok' => 'Patient registered and assigned to the nurse.',
+    'select_nurse'     => 'Select a nurse',
     'exam_submitted'   => 'Clinical examination submitted and report generated.',
     'exam_saved'       => 'Examination saved as draft.',
     'no_records'       => 'No records yet.',

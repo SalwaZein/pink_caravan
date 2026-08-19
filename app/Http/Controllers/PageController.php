@@ -111,7 +111,15 @@ class PageController extends Controller
 
     public function clinicRegister(): View
     {
-        return view('staff.clinic.register', $this->staff('clinic', 'clinic/register'));
+        $clinicIds = auth()->user()->clinicIds();
+        $nurses = \App\Models\User::role('nurse')
+            ->whereHas('clinics', fn ($q) => $q->whereIn('clinics.id', $clinicIds))
+            ->orderBy('name')->get();
+
+        return view('staff.clinic.register', $this->staff('clinic', 'clinic/register', [
+            'nurses'       => $nurses,
+            'eidReaderUrl' => config('services.emirates_id.reader_url') ?: route('tools.eid.read'),
+        ]));
     }
 
     public function clinicAssign(): View
@@ -199,7 +207,7 @@ class PageController extends Controller
     public function superAudit(): View
     {
         $entries = \App\Models\AuditLog::with('user')->latest('id')->limit(100)->get()->map(function ($a) {
-            $icons = ['record.submitted' => '📝', 'record.assigned' => '🔀', 'record.completed' => '✅', 'exam.submitted' => '🔬', 'report.sent' => '📨', 'report.downloaded' => '📤', 'booking.created' => '📅', 'patient.otp_verified' => '🔓'];
+            $icons = ['patient.registered' => '🧾', 'record.submitted' => '📝', 'record.assigned' => '🔀', 'record.completed' => '✅', 'exam.submitted' => '🔬', 'report.sent' => '📨', 'report.downloaded' => '📤', 'booking.created' => '📅', 'patient.otp_verified' => '🔓'];
             return [
                 'who'  => $a->actor_name,
                 'act'  => $a->description ?? $a->action,
