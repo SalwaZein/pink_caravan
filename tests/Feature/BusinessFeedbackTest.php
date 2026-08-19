@@ -58,9 +58,9 @@ class BusinessFeedbackTest extends TestCase
         $dubai = Clinic::where('code', 'DXB-MOB-01')->firstOrFail();
 
         // 1. Nurse submits the registration with all the new fields.
+        // The PC number is no longer captured by the nurse — the mammographer enters it later (step 4).
         $this->actingAs($nurse)->post('/nurse/record', [
             'action'           => 'submit',
-            'manual_pc_number' => 'PC-MANUAL-001',
             'emirates_id'      => '784-1990-1234567-1',
             'full_name'        => 'Test Patient',
             'email'            => 'patient@example.com',
@@ -77,7 +77,6 @@ class BusinessFeedbackTest extends TestCase
 
         $record = PatientHistoryRecord::latest('id')->firstOrFail();
         $this->assertSame('submitted', $record->status);
-        $this->assertSame('PC-MANUAL-001', $record->patient->manual_pc_number);
         $this->assertSame('784-1990-1234567-1', $record->patient->emirates_id);
         $this->assertSame('no', $record->breast_implant);
         $this->assertSame('yes', $record->personal_history['biopsy']);
@@ -94,17 +93,20 @@ class BusinessFeedbackTest extends TestCase
             'consent'   => '1',
         ])->assertSessionHasErrors('patient_signature');
 
-        // 2. Clinic admin assigns the record to a Dubai doctor.
+        // 2. Clinic admin assigns the case to a Dubai doctor.
+        $admin  = $this->user('mariam.s@focp.ae');
         $doctor = User::role('doctor')
             ->whereHas('clinics', fn ($q) => $q->where('clinics.id', $dubai->id))
             ->firstOrFail();
 
-        $this->actingAs($this->user('mariam.s@focp.ae'))
-            ->post('/clinic/assign', ['record_id' => $record->id, 'doctor_id' => $doctor->id])
+        $this->actingAs($admin)
+            ->post('/clinic/assign', ['record_id' => $record->id, 'role' => 'doctor', 'assignee_id' => $doctor->id])
             ->assertRedirect();
 
         $record->refresh();
         $this->assertSame('assigned', $record->status);
+        $this->assertSame('doctor', $record->assigned_role);
+        $this->assertSame($doctor->id, $record->assigned_doctor_id);
 
         // 3. Doctor sees the Form 1 review + CBE result control, then submits.
         $this->actingAs($doctor)->get("/doctor/exam/{$record->id}")
@@ -121,8 +123,9 @@ class BusinessFeedbackTest extends TestCase
             'pins'           => '[]',
         ])->assertRedirect();
 
+        // Doctor finished → the case returns to the clinic admin.
         $record->refresh();
-        $this->assertSame('completed', $record->status);
+        $this->assertSame('returned', $record->status);
         $this->assertSame('abnormal', $record->examination->cbe_result);
         $this->assertSame('abnormal', $record->examination->result);
 
@@ -146,9 +149,22 @@ class BusinessFeedbackTest extends TestCase
         $this->postJson('/verify/check', ['code' => 'V-ZZZZ-ZZZZ', 'ref' => $record->ref_no])
             ->assertOk()->assertJsonPath('valid', false);
 
-        // 4. Mammographer uploads the mammogram report and sends it.
+        // 4. Clinic admin routes the returned case on to a mammographer.
         $mammo = $this->user('n.khalid@focp.ae');
 
+        // A mammographer cannot open a case that has not been assigned to them.
+        $this->actingAs($mammo)->get("/mammographer/record/{$record->id}")->assertForbidden();
+
+        $this->actingAs($admin)
+            ->post('/clinic/assign', ['record_id' => $record->id, 'role' => 'mammographer', 'assignee_id' => $mammo->id])
+            ->assertRedirect();
+
+        $record->refresh();
+        $this->assertSame('assigned', $record->status);
+        $this->assertSame('mammographer', $record->assigned_role);
+        $this->assertSame($mammo->id, $record->mammographer_id);
+
+        // Now the mammographer uploads the mammogram report and sends it.
         $this->actingAs($mammo)->get('/mammographer/queue')->assertOk()->assertSee($record->ref_no);
         $this->actingAs($mammo)->get("/mammographer/record/{$record->id}")->assertOk();
 
@@ -169,9 +185,11 @@ class BusinessFeedbackTest extends TestCase
         $this->actingAs($mammo)->post("/mammographer/record/{$record->id}/send")
             ->assertRedirect(route('mammographer.queue'));
 
+        // Report sent → the case returns to the clinic admin once more.
         $record->refresh();
-        $this->assertSame('report_sent', $record->status);
+        $this->assertSame('returned', $record->status);
         $this->assertNotNull($record->report_sent_at);
+        $this->assertSame('PC-MANUAL-001', $record->patient->manual_pc_number);
 
         // Patient is notified across all three channels (email really sent; SMS/WhatsApp logged as stub).
         Mail::assertSent(ReportReadyMail::class, fn ($m) => $m->hasTo('patient@example.com'));
@@ -179,5 +197,10 @@ class BusinessFeedbackTest extends TestCase
         $this->assertSame('sent', $delivery['email']);
         $this->assertSame('logged', $delivery['sms']);
         $this->assertSame('logged', $delivery['whatsapp']);
+
+        // 5. Clinic admin closes the case.
+        $this->actingAs($admin)->post("/clinic/complete/{$record->id}")->assertRedirect();
+        $record->refresh();
+        $this->assertSame('completed', $record->status);
     }
 }

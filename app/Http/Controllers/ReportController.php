@@ -16,7 +16,8 @@ class ReportController extends Controller
     public function document(PatientHistoryRecord $record): View
     {
         $this->authorizeStaff($record);
-        abort_unless(in_array($record->status, [PatientHistoryRecord::COMPLETED, PatientHistoryRecord::REPORT_SENT], true), 404);
+        // Available once the report has been generated (at doctor submit), through the rest of the workflow.
+        abort_unless($record->report()->exists(), 404);
 
         $report = ReportService::ensure($record->loadMissing('patient', 'examination', 'referrals', 'clinic', 'doctor', 'nurse', 'mammographer'));
 
@@ -47,10 +48,10 @@ class ReportController extends Controller
             ->with(['record.patient', 'record.clinic', 'record.doctor'])
             ->first();
 
+        // A report exists only once it has been issued, so its presence + a matching ref confirms issuance.
         $rec = $report?->record;
         $valid = $report && $rec
-            && strtoupper((string) $rec->ref_no) === $ref
-            && in_array($rec->status, [PatientHistoryRecord::COMPLETED, PatientHistoryRecord::REPORT_SENT], true);
+            && strtoupper((string) $rec->ref_no) === $ref;
 
         if (! $valid) {
             return response()->json(['valid' => false]);

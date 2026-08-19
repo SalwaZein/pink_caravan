@@ -72,10 +72,12 @@ class PageController extends Controller
 
     public function doctorCompleted(): View
     {
+        // Cases this doctor has finished their exam on — keyed off the submitted examination,
+        // so they stay visible after the admin routes the case onward (returned/assigned/completed).
         $records = PatientHistoryRecord::query()
             ->with('patient', 'examination')
             ->where('assigned_doctor_id', auth()->id())
-            ->whereIn('status', ['completed', 'report_sent'])
+            ->whereHas('examination', fn ($q) => $q->where('status', 'submitted'))
             ->latest()->get();
 
         return view('staff.doctor.completed', $this->staff('doctor', 'doctor/completed', [
@@ -95,8 +97,9 @@ class PageController extends Controller
         $base = PatientHistoryRecord::whereIn('clinic_id', $clinicIds);
         $miniStats = [
             ['label' => __('pc.today_col'),       'val' => (string) (clone $base)->whereDate('created_at', today())->count(), 'color' => '#E6017E'],
-            ['label' => __('pc.awaiting_doctor'), 'val' => (string) (clone $base)->whereIn('status', ['submitted', 'assigned'])->count(), 'color' => '#2A6FDB'],
-            ['label' => __('pc.in_review'),       'val' => (string) (clone $base)->where('status', 'in_review')->count(), 'color' => '#7E4CC4'],
+            ['label' => __('pc.unassigned'),      'val' => (string) (clone $base)->where('status', 'submitted')->count(), 'color' => '#2A6FDB'],
+            ['label' => __('pc.in_progress'),     'val' => (string) (clone $base)->whereIn('status', ['assigned', 'in_review'])->count(), 'color' => '#7E4CC4'],
+            ['label' => __('pc.returned'),        'val' => (string) (clone $base)->where('status', 'returned')->count(), 'color' => '#F7941E'],
             ['label' => __('pc.completed'),       'val' => (string) (clone $base)->whereIn('status', ['completed', 'report_sent'])->count(), 'color' => '#2E7D32'],
         ];
 
@@ -115,21 +118,27 @@ class PageController extends Controller
     {
         $clinicIds = auth()->user()->clinicIds();
 
+        // Every active case in the admin's clinics — awaiting first assignment, in progress,
+        // or returned by a role for a decision. Completed cases drop off the board.
         $records = PatientHistoryRecord::query()
-            ->with('patient', 'clinic')
+            ->with('patient', 'clinic', 'doctor', 'mammographer')
             ->whereIn('clinic_id', $clinicIds)
-            ->whereIn('status', ['submitted', 'assigned'])
+            ->whereIn('status', ['submitted', 'assigned', 'in_review', 'returned'])
             ->latest()->get();
 
-        // Doctors available per clinic the admin manages.
-        $doctors = \App\Models\User::role('doctor')
+        // Doctors and mammographers available per clinic the admin manages.
+        $doctors = \App\Models\User::role('doctor')->with('clinics')
+            ->whereHas('clinics', fn ($q) => $q->whereIn('clinics.id', $clinicIds))
+            ->orderBy('name')->get();
+        $mammographers = \App\Models\User::role('mammographer')->with('clinics')
             ->whereHas('clinics', fn ($q) => $q->whereIn('clinics.id', $clinicIds))
             ->orderBy('name')->get();
 
         return view('staff.clinic.assign', $this->staff('clinic', 'clinic/assign', [
-            'assignList' => RecordPresenter::rows($records, 'nurse.record.edit'),
-            'records'    => $records,
-            'doctors'    => $doctors,
+            'assignList'    => RecordPresenter::rows($records, 'nurse.record.edit'),
+            'records'       => $records,
+            'doctors'       => $doctors,
+            'mammographers' => $mammographers,
         ]));
     }
 
@@ -190,7 +199,7 @@ class PageController extends Controller
     public function superAudit(): View
     {
         $entries = \App\Models\AuditLog::with('user')->latest('id')->limit(100)->get()->map(function ($a) {
-            $icons = ['record.submitted' => '📝', 'record.assigned' => '🔀', 'exam.submitted' => '🔬', 'report.downloaded' => '📤', 'booking.created' => '📅', 'patient.otp_verified' => '🔓'];
+            $icons = ['record.submitted' => '📝', 'record.assigned' => '🔀', 'record.completed' => '✅', 'exam.submitted' => '🔬', 'report.sent' => '📨', 'report.downloaded' => '📤', 'booking.created' => '📅', 'patient.otp_verified' => '🔓'];
             return [
                 'who'  => $a->actor_name,
                 'act'  => $a->description ?? $a->action,

@@ -9,16 +9,23 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class PatientHistoryRecord extends Model
 {
-    // Workflow statuses
+    // Workflow statuses. The clinic admin is the routing hub: they assign a case to a
+    // doctor or a mammographer, that role works it, and it comes back to the admin
+    // (RETURNED) to be reassigned to the other role or closed (COMPLETED).
     public const DRAFT      = 'draft';
-    public const SUBMITTED  = 'submitted';   // submitted by nurse, awaiting assignment
-    public const ASSIGNED   = 'assigned';    // assigned to a doctor, awaiting exam
-    public const IN_REVIEW  = 'in_review';   // doctor working on it
-    public const COMPLETED  = 'completed';   // exam done, report generated
-    public const REPORT_SENT = 'report_sent'; // mammogram report uploaded + sent to patient
+    public const SUBMITTED  = 'submitted';   // submitted by nurse, in the admin inbox for first assignment
+    public const ASSIGNED   = 'assigned';    // assigned to a role+person, awaiting them to start
+    public const IN_REVIEW  = 'in_review';   // the assigned person is working on it
+    public const RETURNED   = 'returned';    // role finished, back in the admin inbox for a decision
+    public const COMPLETED  = 'completed';   // admin closed the case (terminal)
+    public const REPORT_SENT = 'report_sent'; // legacy: mammogram report sent (superseded by report_sent_at + RETURNED)
+
+    // Roles a case can be assigned to.
+    public const ROLE_DOCTOR       = 'doctor';
+    public const ROLE_MAMMOGRAPHER = 'mammographer';
 
     protected $fillable = [
-        'ref_no', 'patient_id', 'clinic_id', 'nurse_id', 'assigned_doctor_id', 'mammographer_id', 'record_date',
+        'ref_no', 'patient_id', 'clinic_id', 'nurse_id', 'assigned_doctor_id', 'mammographer_id', 'assigned_role', 'record_date',
         'age_at_menarche', 'number_of_children', 'breast_implant', 'age_first_delivery', 'lmp', 'menopause', 'menopause_since_year',
         'personal_history', 'personal_history_notes', 'family_history',
         'breastfeeding_under6', 'breastfeeding_children', 'last_mammogram', 'cbe_result', 'examiner_name',
@@ -91,6 +98,16 @@ class PatientHistoryRecord extends Model
     public function isEditableByNurse(): bool
     {
         return $this->status === self::DRAFT;
+    }
+
+    /** The user the case is currently assigned to (doctor or mammographer), if any. */
+    public function activeAssignee(): ?User
+    {
+        return match ($this->assigned_role) {
+            self::ROLE_DOCTOR       => $this->doctor,
+            self::ROLE_MAMMOGRAPHER => $this->mammographer,
+            default                 => null,
+        };
     }
 
     /** Final result comes from the doctor's exam, falling back to the nurse's initial CBE result. */

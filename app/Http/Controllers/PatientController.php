@@ -138,7 +138,7 @@ class PatientController extends Controller
     private function findPatient(string $mobile): ?Patient
     {
         return Patient::where('mobile1', $mobile)->orWhere('mobile2', $mobile)
-            ->whereHas('record', fn ($q) => $q->whereIn('status', [PatientHistoryRecord::COMPLETED, PatientHistoryRecord::REPORT_SENT]))
+            ->whereHas('record.report')
             ->latest()->first();
     }
 
@@ -150,7 +150,7 @@ class PatientController extends Controller
         }
 
         return PatientHistoryRecord::where('patient_id', $id)
-            ->whereIn('status', [PatientHistoryRecord::COMPLETED, PatientHistoryRecord::REPORT_SENT])
+            ->whereHas('report')
             ->latest()->first();
     }
 
