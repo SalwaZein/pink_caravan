@@ -43,8 +43,8 @@
                     <input type="hidden" name="record_id" value="{{ $r->id }}" />
                     <input type="hidden" name="role" :value="role" />
                     <div style="display:inline-flex;border:1px solid #E3D2DC;border-radius:10px;overflow:hidden;">
-                        <button type="button" @click="role='doctor'" :style="role==='doctor' ? 'background:#F7E3EF;color:#C0116E;' : 'background:#fff;color:#6B4257;'" style="cursor:pointer;border:none;font-size:12.5px;font-weight:600;padding:9px 12px;">{{ __('pc.role_doctor') }}</button>
-                        <button type="button" @click="role='mammographer'" :style="role==='mammographer' ? 'background:#F7E3EF;color:#C0116E;' : 'background:#fff;color:#6B4257;'" style="cursor:pointer;border:none;border-inline-start:1px solid #E3D2DC;font-size:12.5px;font-weight:600;padding:9px 12px;">{{ __('pc.role_mammographer') }}</button>
+                        <button type="button" @click="role='doctor'" :style="role==='doctor' ? { background:'#F7E3EF', color:'#C0116E' } : { background:'#fff', color:'#6B4257' }" style="cursor:pointer;border:none;font-size:12.5px;font-weight:600;padding:9px 14px;white-space:nowrap;">{{ __('pc.role_doctor') }}</button>
+                        <button type="button" @click="role='mammographer'" :style="role==='mammographer' ? { background:'#F7E3EF', color:'#C0116E' } : { background:'#fff', color:'#6B4257' }" style="cursor:pointer;border:none;border-inline-start:1px solid #E3D2DC;font-size:12.5px;font-weight:600;padding:9px 14px;white-space:nowrap;">{{ __('pc.role_mammographer') }}</button>
                     </div>
 
                     {{-- Doctor picker --}}
