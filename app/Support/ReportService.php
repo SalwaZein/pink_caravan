@@ -27,7 +27,13 @@ class ReportService
         $existing = Report::where('record_id', $record->id)->first();
         $verifyCode = $existing?->verify_code ?: self::uniqueVerifyCode();
 
-        $html = view('reports.patient', ['record' => $record, 'verifyCode' => $verifyCode])->render();
+        $verifyUrl = QrCode::verifyUrl($verifyCode, $record->ref_no);
+        $html = view('reports.patient', [
+            'record'     => $record,
+            'verifyCode' => $verifyCode,
+            'verifyUrl'  => $verifyUrl,
+            'qr'         => QrCode::svg($verifyUrl, 120),
+        ])->render();
 
         $tmp = storage_path('app/mpdf');
         if (! is_dir($tmp)) {

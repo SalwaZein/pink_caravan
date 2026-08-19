@@ -15,7 +15,7 @@
     .info td.k { background: #FAF4F7; color: #6B4257; font-weight: bold; width: 26%; }
     .badge { display: inline-block; padding: 4px 12px; border-radius: 10px; font-weight: bold; font-size: 12px; }
     .normal { background: #E4F4EF; color: #2E7D32; }
-    .abnormal { background: #FBE4E4; color: #C62828; }
+    .abnormal { background: #FBEEDD; color: #B25E00; }
     .section { margin-top: 18px; }
     .section h2 { font-size: 13px; color: #E6017E; border-bottom: 1px solid #EFE2EA; padding-bottom: 5px; margin: 0 0 8px; }
     .foot { margin-top: 28px; border-top: 1px solid #EFE2EA; padding-top: 12px; font-size: 10px; color: #9A8F97; }
@@ -47,8 +47,11 @@
     <div class="section">
         <h2>Result · النتيجة</h2>
         <span class="badge {{ $result === 'abnormal' ? 'abnormal' : 'normal' }}">
-            {{ $result === 'abnormal' ? 'Abnormal · غير طبيعي' : 'Normal · طبيعي' }}
+            {{ $result === 'abnormal' ? 'Further assessment recommended · يوصى بتقييم إضافي' : 'Normal · طبيعي' }}
         </span>
+        @if ($result === 'abnormal')
+            <div class="muted" style="margin-top:8px;font-size:11px;line-height:1.5;">A routine follow-up imaging check (mammogram) is recommended to complete your screening. This is a common next step and does not confirm any diagnosis. · يوصى بإجراء تصوير شعاعي للمتابعة لاستكمال الفحص، وهذه خطوة شائعة ولا تؤكّد أي تشخيص.</div>
+        @endif
     </div>
 
     @if ($ex)
@@ -96,10 +99,15 @@
             <h2>Verification · التحقق</h2>
             <table class="info">
                 <tr>
+                    @isset($qr)
+                        <td class="k" style="width:110px;text-align:center;vertical-align:middle;" rowspan="2"><div style="width:96px;height:96px;">{!! $qr !!}</div></td>
+                    @endisset
                     <td class="k">Verification code · رمز التحقق</td>
                     <td><strong style="letter-spacing:1px;">{{ $verifyCode }}</strong></td>
-                    <td class="k">Validate at · تحقّق على</td>
-                    <td>pinkcaravan.ae/verify</td>
+                </tr>
+                <tr>
+                    <td class="k">How to verify · طريقة التحقق</td>
+                    <td>Scan the QR code, or enter the code at pinkcaravan.ae/verify · امسح رمز QR أو أدخل الرمز على pinkcaravan.ae/verify</td>
                 </tr>
             </table>
         </div>

@@ -37,7 +37,13 @@
                 { kEn: 'Examining doctor', kAr: 'الطبيبة الفاحصة', v: d.doctor, vAr: '' },
             ].map(r => ({ ...r, hasAr: !!r.vAr }));
         },
-        reset() { this.step = 'form'; this.code = ''; this.ref = ''; this.error = ''; }
+        reset() { this.step = 'form'; this.code = ''; this.ref = ''; this.error = ''; },
+        init() {
+            // Scanning a report's QR code lands here with ?code=&ref= — verify automatically.
+            const q = new URLSearchParams(window.location.search);
+            const c = q.get('code'), r = q.get('ref');
+            if (c && r) { this.code = c; this.ref = r; this.submit(); }
+        }
     }"
     style="min-height: 100vh; display: flex; flex-direction: column; background: radial-gradient(120% 80% at 80% 0%, #FCE7F0 0%, #F4EEF1 45%, #F4EEF1 100%);">
 

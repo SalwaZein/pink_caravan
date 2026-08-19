@@ -42,7 +42,7 @@ class ReportPresenter
         'mammoRole' => ['Mammographer', 'فني الأشعة'],
         'attested'  => ['Electronically attested', 'معتمد إلكترونياً'],
         'verify'    => ['Verification code', 'رمز التحقق'],
-        'verifyHint'=> ['Validate at pinkcaravan.ae/verify', 'تحقّق من التقرير على pinkcaravan.ae/verify'],
+        'verifyHint'=> ['Scan the QR code to verify this report, or enter the code at pinkcaravan.ae/verify', 'امسح رمز QR للتحقق من التقرير، أو أدخل الرمز على pinkcaravan.ae/verify'],
         'confidential' => [
             'This report is confidential and intended only for the named patient. A clinical breast examination is not a substitute for mammography.',
             'هذا التقرير سري ومخصص للمريضة المذكورة فقط. لا يُعدّ الفحص السريري للثدي بديلاً عن التصوير الشعاعي.',
@@ -59,9 +59,11 @@ class ReportPresenter
         'inner'   => ['inner', 'داخلي'],
         'quadrant'=> ['quadrant', 'ربع'],
         'normal'  => ['Normal', 'طبيعي'],
-        'abnormal'=> ['Abnormal', 'غير طبيعي'],
-        'normalNote'   => ['No abnormal findings were recorded at this examination.', ''],
-        'abnormalNote' => ['Findings recorded that require further imaging assessment.', ''],
+        // Patient-facing wording is deliberately reassuring: a clinical finding that needs
+        // a routine follow-up scan is NOT a diagnosis, and alarming language causes panic.
+        'abnormal'=> ['Further assessment recommended', 'يوصى بتقييم إضافي'],
+        'normalNote'   => ['No concerning findings were recorded at this examination.', ''],
+        'abnormalNote' => ['A routine follow-up imaging check (mammogram) is recommended to complete your screening. This is a common next step and does not confirm any diagnosis.', ''],
     ];
 
     private const NEXT_STEPS = [
@@ -178,8 +180,9 @@ class ReportPresenter
             'hasPins'     => count($pins) > 0,
             'team'        => $team,
             'resultText'  => self::bi($abnormal ? 'abnormal' : 'normal'),
-            'resultColor' => $abnormal ? '#C62828' : '#2E7D32',
-            'resultBg'    => $abnormal ? '#FBE4E4' : '#E4F4EF',
+            // Amber (not alarming red) for the follow-up case, green for normal.
+            'resultColor' => $abnormal ? '#B25E00' : '#2E7D32',
+            'resultBg'    => $abnormal ? '#FBEEDD' : '#E4F4EF',
             'resultNote'  => self::en($abnormal ? 'abnormalNote' : 'normalNote'),
             'recText'     => $ex?->recommendation ?: self::en($abnormal ? 'abnormal' : 'normal'),
             'notesText'   => $ex?->comments ?: '—',
@@ -189,6 +192,8 @@ class ReportPresenter
                 'issuedAt'   => optional($report->generated_at ?? $record->submitted_at)->format('d M Y'),
                 'attestedAt' => $fmt($ex?->attested_at),
                 'verifyCode' => $report->verify_code,
+                'verifyUrl'  => QrCode::verifyUrl($report->verify_code, $record->ref_no),
+                'qr'         => QrCode::svg(QrCode::verifyUrl($report->verify_code, $record->ref_no)),
             ],
         ];
     }
