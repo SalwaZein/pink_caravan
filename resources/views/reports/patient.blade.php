@@ -29,7 +29,8 @@
 @endphp
 <div class="wrap">
     <div class="head">
-        <div class="brand">Pink Caravan · القافلة الوردية
+        <img src="{{ public_path('assets/focp-pc-logo.svg') }}" alt="Friends of Cancer Patients — Pink Caravan" style="height:46px;" />
+        <div class="brand" style="margin-top:8px;">Pink Caravan · القافلة الوردية
             <small>Friends of Cancer Patients (FOCP) — Riding for Courage · أصدقاء مرضى السرطان</small>
         </div>
     </div>

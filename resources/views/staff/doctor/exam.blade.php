@@ -135,19 +135,25 @@
         <div style="{{ $card }}padding:20px 24px;margin-bottom:16px;">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><h3 style="margin:0;font-size:15px;font-weight:700;">{{ __('pc.breast_diagram') }}</h3><div style="display:flex;align-items:center;gap:14px;"><span style="font-size:12px;color:#9A8F97;"><span x-text="pins.length">0</span> {{ __('pc.pins_placed') }}</span><span @click="pins=[]" role="button" style="cursor:pointer;font-size:12px;font-weight:600;color:#E6017E;">{{ __('pc.clear_pins') }}</span></div></div>
             <p style="font-size:12px;color:#9A8F97;margin:0 0 14px;">{{ __('pc.diagram_help') }}</p>
-            <div @click="addPin($event)" role="button" style="cursor:crosshair;position:relative;height:240px;background:#FBF6F9;border:1px dashed #E3D2DC;border-radius:14px;display:flex;align-items:center;justify-content:center;overflow:hidden;">
-                <svg width="420" height="200" viewBox="0 0 420 200" style="pointer-events:none;">
-                    <text x="105" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#B7A9B2">R</text>
-                    <text x="315" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#B7A9B2">L</text>
-                    <circle cx="105" cy="115" r="72" fill="none" stroke="#E0C9D5" stroke-width="2"/>
-                    <circle cx="105" cy="115" r="12" fill="none" stroke="#D3A9BF" stroke-width="2"/>
-                    <circle cx="315" cy="115" r="72" fill="none" stroke="#E0C9D5" stroke-width="2"/>
-                    <circle cx="315" cy="115" r="12" fill="none" stroke="#D3A9BF" stroke-width="2"/>
-                    <line x1="210" y1="40" x2="210" y2="190" stroke="#EEDCE6" stroke-width="1" stroke-dasharray="4 4"/>
-                </svg>
-                <template x-for="(pin, idx) in pins" :key="idx">
-                    <div :style="`position:absolute;left:${pin.x}%;top:${pin.y}%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:#E6017E;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(230,1,126,.4);border:2px solid #fff;`" x-text="idx+1"></div>
-                </template>
+            {{-- The click layer must be the DIAGRAM box itself, not the padded frame around it:
+                 pins are stored as percentages of whatever element is measured, so measuring the
+                 frame would make every coordinate depend on the doctor's window width and land in
+                 the wrong place on the report. Keep this box and the report's in sync. --}}
+            <div style="background:#FBF6F9;border:1px dashed #E3D2DC;border-radius:14px;padding:20px;display:flex;align-items:center;justify-content:center;">
+                <div @click="addPin($event)" role="button" style="cursor:crosshair;position:relative;width:420px;max-width:100%;">
+                    <svg viewBox="0 0 420 200" style="display:block;width:100%;height:auto;pointer-events:none;">
+                        <text x="105" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#B7A9B2">R</text>
+                        <text x="315" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#B7A9B2">L</text>
+                        <circle cx="105" cy="115" r="72" fill="none" stroke="#E0C9D5" stroke-width="2"/>
+                        <circle cx="105" cy="115" r="12" fill="none" stroke="#D3A9BF" stroke-width="2"/>
+                        <circle cx="315" cy="115" r="72" fill="none" stroke="#E0C9D5" stroke-width="2"/>
+                        <circle cx="315" cy="115" r="12" fill="none" stroke="#D3A9BF" stroke-width="2"/>
+                        <line x1="210" y1="40" x2="210" y2="190" stroke="#EEDCE6" stroke-width="1" stroke-dasharray="4 4"/>
+                    </svg>
+                    <template x-for="(pin, idx) in pins" :key="idx">
+                        <div :style="`position:absolute;left:${pin.x}%;top:${pin.y}%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:#E6017E;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(230,1,126,.4);border:2px solid #fff;`" x-text="idx+1"></div>
+                    </template>
+                </div>
             </div>
         </div>
 

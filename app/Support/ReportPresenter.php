@@ -47,7 +47,6 @@ class ReportPresenter
             'This report is confidential and intended only for the named patient. A clinical breast examination is not a substitute for mammography.',
             'هذا التقرير سري ومخصص للمريضة المذكورة فقط. لا يُعدّ الفحص السريري للثدي بديلاً عن التصوير الشعاعي.',
         ],
-        'page'    => ['Page 1 of 1', 'صفحة 1 من 1'],
         'symptom' => ['Symptom', 'عَرَض'],
         'sign'    => ['Sign', 'علامة'],
         'right'   => ['Right', 'يمين'],
@@ -170,7 +169,7 @@ class ReportPresenter
                 'map' => self::bi('map'), 'mapEmpty' => self::en('mapEmpty'),
                 'notes' => self::bi('notes'), 'careTeam' => self::bi('careTeam'),
                 'attested' => self::en('attested'), 'verify' => self::bi('verify'), 'verifyHint' => self::en('verifyHint'),
-                'confidential' => self::en('confidential'), 'page' => self::en('page'),
+                'confidential' => self::en('confidential'),
             ],
             'meta' => [
                 ['k' => self::bi('name'),     'v' => $p?->full_name ?? '—', 'dir' => 'ltr'],

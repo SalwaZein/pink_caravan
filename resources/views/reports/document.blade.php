@@ -16,8 +16,17 @@
   @media print {
     body { background: #fff; }
     .noprint { display: none !important; }
-    .doc { box-shadow: none !important; border: 0 !important; margin: 0 !important; width: 100% !important; }
-    @page { size: A4; margin: 10mm; }
+    .doc { box-shadow: none !important; border: 0 !important; margin: 0 !important; width: 100% !important; border-radius: 0 !important; }
+    @page { size: A4; margin: 11mm 10mm 16mm; }
+
+    /* Pagination: never split a section, a table row or the header block across
+       two pages, and never leave a heading stranded at the foot of a page. */
+    .sec, .row, .head { break-inside: avoid; page-break-inside: avoid; }
+    h3, .lede { break-after: avoid; page-break-after: avoid; }
+
+    /* Repeat the confidentiality strip at the foot of every printed page. */
+    .docfoot { position: fixed; left: 0; right: 0; bottom: 0; border-top: 1px solid #F3E7EE; }
+    .pagepad { padding-bottom: 12mm; }
   }
 </style>
 </head>
@@ -39,9 +48,9 @@
 
   <div class="doc" style="max-width: 860px; margin: 0 auto; background: #fff; border: 1px solid #EFE2EA; border-radius: 6px; box-shadow: 0 10px 34px rgba(120,60,90,.10); overflow: hidden;">
 
-    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding: 26px 34px 22px; border-bottom: 3px solid #E6017E;">
-      <div style="display: flex; align-items: center; gap: 16px;">
-        <img src="{{ asset('assets/pink-caravan-logo.png') }}" alt="Pink Caravan" style="height: 56px; width: auto;" />
+    <div class="head" style="display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; padding: 26px 34px 22px; border-bottom: 3px solid #E6017E;">
+      <div style="display: flex; align-items: center; gap: 18px;">
+        <img src="{{ asset('assets/focp-pc-logo.svg') }}" alt="Friends of Cancer Patients — Pink Caravan" style="height: 58px; width: auto; flex-shrink: 0;" />
         <div>
           <div style="font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #E6017E;">{{ $vm['f']['org'] }}</div>
           <div style="font-size: 19px; font-weight: 700; margin-top: 5px; letter-spacing: -.01em;">{{ $vm['f']['title'] }}</div>
@@ -65,10 +74,10 @@
       @endforeach
     </div>
 
-    <div style="padding: 24px 34px 30px; display: flex; flex-direction: column; gap: 24px;">
+    <div class="pagepad" style="padding: 24px 34px 30px; display: flex; flex-direction: column; gap: 24px;">
 
       {{-- Result + recommendation on a single compact line (next steps close the report). --}}
-      <div>
+      <div class="sec">
         <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; border: 1px solid #F0E1E9; border-inline-start: 4px solid {{ $vm['resultColor'] }}; border-radius: 12px; padding: 12px 16px; background: {{ $vm['resultBg'] }};">
           <span style="font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #6B6472;">{{ $vm['f']['result'] }}</span>
           <span style="font-size: 15px; font-weight: 700; color: {{ $vm['resultColor'] }};">{{ $vm['resultText'] }}</span>
@@ -81,7 +90,7 @@
         @endif
       </div>
 
-      <div>
+      <div class="sec">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
           <h3 style="margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #6B4257;">{{ $vm['f']['findings'] }}</h3>
           <div style="flex: 1; height: 1px; background: #F3E7EE;"></div>
@@ -92,7 +101,7 @@
               <div>{{ $vm['f']['findingCol'] }}</div><div>{{ $vm['f']['typeCol'] }}</div><div>{{ $vm['f']['sideCol'] }}</div>
             </div>
             @foreach ($vm['findings'] as $fi)
-              <div style="display: grid; grid-template-columns: 1.6fr 120px 140px; gap: 12px; align-items: center; padding: 10px 16px; border-top: 1px solid #F5EBF1; font-size: 13px;">
+              <div class="row" style="display: grid; grid-template-columns: 1.6fr 120px 140px; gap: 12px; align-items: center; padding: 10px 16px; border-top: 1px solid #F5EBF1; font-size: 13px;">
                 <div style="font-weight: 600;">{{ $fi['label'] }}</div>
                 <div><span style="font-size: 10.5px; font-weight: 700; padding: 3px 9px; border-radius: 999px; color: {{ $fi['catC'] }}; background: {{ $fi['catBg'] }};">{{ $fi['cat'] }}</span></div>
                 <div style="font-size: 12.5px; color: #6B6472;">{{ $fi['side'] }}</div>
@@ -104,14 +113,16 @@
         @endif
       </div>
 
-      <div>
+      <div class="sec">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
           <h3 style="margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #6B4257;">{{ $vm['f']['map'] }}</h3>
           <div style="flex: 1; height: 1px; background: #F3E7EE;"></div>
         </div>
-        <div style="display: grid; grid-template-columns: 1fr 250px; gap: 16px;">
-          <div style="position: relative; height: 210px; background: #FDFAFC; border: 1px solid #F0E1E9; border-radius: 12px; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-            <svg width="380" height="185" viewBox="0 0 420 200">
+        <div style="border: 1px solid #F0E1E9; border-radius: 12px; padding: 16px; background: #FDFAFC;">
+          {{-- The pin layer is exactly the diagram box, matching the doctor's exam form, so a pin
+               lands on the same spot the doctor marked. Do not pad or resize one without the other. --}}
+          <div style="position: relative; width: 420px; max-width: 100%; margin: 0 auto;">
+            <svg viewBox="0 0 420 200" style="display: block; width: 100%; height: auto;">
               <text x="105" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#B7A9B2" font-family="IBM Plex Sans">R</text>
               <text x="315" y="22" text-anchor="middle" font-size="13" font-weight="700" fill="#B7A9B2" font-family="IBM Plex Sans">L</text>
               <circle cx="105" cy="115" r="72" fill="#fff" stroke="#E0C9D5" stroke-width="2"/>
@@ -127,22 +138,24 @@
               <div style="position: absolute; left: {{ $pin['left'] }}; top: {{ $pin['top'] }}; transform: translate(-50%,-50%); width: 22px; height: 22px; border-radius: 50%; background: #E6017E; color: #fff; font-size: 11.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(230,1,126,.35); border: 2px solid #fff;">{{ $pin['n'] }}</div>
             @endforeach
           </div>
-          <div style="border: 1px solid #F0E1E9; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
-            @if ($vm['hasPins'])
+
+          {{-- Pin notes run along the page under the diagram (no side panel). --}}
+          @if ($vm['hasPins'])
+            <div style="display: flex; flex-wrap: wrap; gap: 9px 26px; margin-top: 14px; padding-top: 13px; border-top: 1px solid #F3E7EE;">
               @foreach ($vm['pins'] as $pin)
-                <div style="display: flex; align-items: center; gap: 9px; font-size: 12px; color: #453A44;">
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #453A44;">
                   <span style="width: 20px; height: 20px; flex-shrink: 0; border-radius: 50%; background: #FCE7F0; color: #E6017E; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: center;">{{ $pin['n'] }}</span>
                   <span>{{ $pin['label'] }}</span>
                 </div>
               @endforeach
-            @else
-              <div style="font-size: 12.5px; color: #9A8F97; line-height: 1.5;">{{ $vm['f']['mapEmpty'] }}</div>
-            @endif
-          </div>
+            </div>
+          @else
+            <div style="font-size: 12.5px; color: #9A8F97; line-height: 1.5; margin-top: 14px; padding-top: 13px; border-top: 1px solid #F3E7EE;">{{ $vm['f']['mapEmpty'] }}</div>
+          @endif
         </div>
       </div>
 
-      <div>
+      <div class="sec">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
           <h3 style="margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #6B4257;">{{ $vm['f']['notes'] }}</h3>
           <div style="flex: 1; height: 1px; background: #F3E7EE;"></div>
@@ -151,7 +164,7 @@
       </div>
 
       {{-- Next steps — the last thing the patient reads before the signature block. --}}
-      <div>
+      <div class="sec">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
           <h3 style="margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #6B4257;">{{ $vm['f']['nextSteps'] }}</h3>
           <div style="flex: 1; height: 1px; background: #F3E7EE;"></div>
@@ -166,7 +179,7 @@
         </div>
       </div>
 
-      <div style="display: grid; grid-template-columns: 1fr 240px; gap: 16px; align-items: stretch; border-top: 1px solid #F3E7EE; padding-top: 20px;">
+      <div class="sec" style="display: grid; grid-template-columns: 1fr 240px; gap: 16px; align-items: stretch; border-top: 1px solid #F3E7EE; padding-top: 20px;">
         <div style="display: flex; flex-direction: column;">
           <div style="font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #B7A9B2; margin-bottom: 10px;">{{ $vm['f']['careTeam'] }}</div>
           <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; align-items: stretch;">
@@ -192,9 +205,11 @@
       </div>
     </div>
 
-    <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 34px; background: #FAF4F7; border-top: 1px solid #F3E7EE; font-size: 11px; color: #9A8F97;">
+    <div class="docfoot" style="display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 34px; background: #FAF4F7; border-top: 1px solid #F3E7EE; font-size: 11px; color: #9A8F97;">
       <span style="max-width: 70%; line-height: 1.5;">{{ $vm['f']['confidential'] }}</span>
-      <span style="font-weight: 600; flex-shrink: 0;">{{ $vm['data']['refNo'] }} · {{ $vm['f']['page'] }}</span>
+      {{-- No page number: browsers can't fill @page margin boxes, so a hardcoded
+           "Page 1 of 1" lies as soon as the report runs onto a second sheet. --}}
+      <span style="font-weight: 600; flex-shrink: 0;">{{ $vm['data']['refNo'] }}</span>
     </div>
   </div>
 </div>
