@@ -209,15 +209,24 @@ class BusinessFeedbackTest extends TestCase
         $admin = $this->user('mariam.s@focp.ae');
         $nurse = $this->user('s.nuaimi@focp.ae');
 
-        // Clinic admin captures the Emirates-ID demographics and assigns a nurse.
+        // The clinic admin gets the same full record sheet the nurse uses.
+        $this->actingAs($admin)->get('/clinic/register')
+            ->assertOk()
+            ->assertSee('Patient History')
+            ->assertSee('Assign the case');
+
+        // Here they capture the Emirates-ID demographics only and hand the case to a nurse
+        // to complete the rest of the profile (saved as a draft).
         $this->actingAs($admin)->post('/clinic/register', [
+            'action'      => 'draft',
             'full_name'   => 'Aisha Al Marri',
             'emirates_id' => '784-1990-1234567-1',
             'dob'         => '1990-05-14',
             'nationality' => 'Emirati',
             'emirate'     => 'dubai',
             'mobile1'     => '+971501112233',
-            'nurse_id'    => $nurse->id,
+            'assign_role' => 'nurse',
+            'assignee_id' => $nurse->id,
         ])->assertRedirect(route('clinic.queue'));
 
         $record = PatientHistoryRecord::latest('id')->firstOrFail();
@@ -235,5 +244,101 @@ class BusinessFeedbackTest extends TestCase
         // The clinic admin can view the entered data read-only.
         $this->actingAs($admin)->get("/clinic/record/{$record->id}")
             ->assertOk()->assertSee('Aisha Al Marri')->assertSee('784-1990-1234567-1');
+    }
+
+    public function test_registration_can_route_the_case_straight_to_a_doctor(): void
+    {
+        $nurse  = $this->user('s.nuaimi@focp.ae');
+        $dubai  = Clinic::where('code', 'DXB-MOB-01')->firstOrFail();
+        $doctor = User::role('doctor')
+            ->whereHas('clinics', fn ($q) => $q->where('clinics.id', $dubai->id))
+            ->firstOrFail();
+
+        // The nurse registers the full profile and assigns the doctor in one step.
+        $this->actingAs($nurse)->get('/nurse/record')->assertOk()->assertSee('Assign the case');
+
+        $this->actingAs($nurse)->post('/nurse/record', [
+            'action'           => 'submit',
+            'full_name'        => 'Direct To Doctor',
+            'mobile1'          => '+971500000010',
+            'consent'          => '1',
+            'patient_signature'=> 'data:image/png;base64,iVBORw0KGgo=',
+            'assign_role'      => 'doctor',
+            'assignee_id'      => $doctor->id,
+        ])->assertRedirect(route('nurse.queue'));
+
+        $record = PatientHistoryRecord::latest('id')->firstOrFail();
+        $this->assertSame('assigned', $record->status);
+        $this->assertSame('doctor', $record->assigned_role);
+        $this->assertSame($doctor->id, $record->assigned_doctor_id);
+
+        // It lands in that doctor queue without the admin having to route it.
+        $this->actingAs($doctor)->get('/doctor/assigned')->assertOk()->assertSee($record->ref_no);
+    }
+
+    public function test_clinic_admin_registers_full_profile_and_routes_to_mammographer(): void
+    {
+        $admin = $this->user('mariam.s@focp.ae');
+        $mammo = $this->user('n.khalid@focp.ae');
+
+        $this->actingAs($admin)->post('/clinic/register', [
+            'action'           => 'submit',
+            'full_name'        => 'Full Profile Patient',
+            'emirates_id'      => '784-1988-7654321-2',
+            'dob'              => '1988-02-03',
+            'nationality'      => 'Emirati',
+            'emirate'          => 'dubai',
+            'marital_status'   => 'married',
+            'mobile1'          => '+971500000011',
+            'email'            => 'full@example.com',
+            'age_at_menarche'  => 13,
+            'breast_implant'   => 'no',
+            'personal'         => ['hrt' => 'yes'],
+            'personal_notes'   => ['hrt' => 'since 2021'],
+            'family'           => ['deg2' => ['relationship' => 'Aunt', 'age' => '52']],
+            'cbe_result'       => 'normal',
+            'consent'          => '1',
+            'patient_signature'=> 'data:image/png;base64,iVBORw0KGgo=',
+            'signed_at'        => now()->toDateString(),
+            'assign_role'      => 'mammographer',
+            'assignee_id'      => $mammo->id,
+        ])->assertRedirect(route('clinic.queue'));
+
+        $record = PatientHistoryRecord::latest('id')->firstOrFail();
+
+        // The whole profile is captured — not just the ID demographics.
+        $this->assertSame('married', $record->patient->marital_status);
+        $this->assertSame('full@example.com', $record->patient->email);
+        $this->assertSame(13, $record->age_at_menarche);
+        $this->assertSame('yes', $record->personal_history['hrt']);
+        $this->assertSame('since 2021', $record->personal_history_notes['hrt']);
+        $this->assertSame('Aunt', $record->family_history['deg2']['relationship']);
+        $this->assertNotEmpty($record->patient_signature);
+
+        // ...and it is routed straight to the mammographer.
+        $this->assertSame('assigned', $record->status);
+        $this->assertSame('mammographer', $record->assigned_role);
+        $this->assertSame($mammo->id, $record->mammographer_id);
+        $this->actingAs($mammo)->get('/mammographer/queue')->assertOk()->assertSee($record->ref_no);
+    }
+
+    public function test_registration_rejects_an_assignee_from_another_clinic(): void
+    {
+        $nurse = $this->user('s.nuaimi@focp.ae');
+        $dubai = Clinic::where('code', 'DXB-MOB-01')->firstOrFail();
+
+        $outsider = User::role('doctor')
+            ->whereDoesntHave('clinics', fn ($q) => $q->where('clinics.id', $dubai->id))
+            ->firstOrFail();
+
+        $this->actingAs($nurse)->post('/nurse/record', [
+            'action'           => 'submit',
+            'full_name'        => 'Wrong Clinic',
+            'mobile1'          => '+971500000012',
+            'consent'          => '1',
+            'patient_signature'=> 'data:image/png;base64,iVBORw0KGgo=',
+            'assign_role'      => 'doctor',
+            'assignee_id'      => $outsider->id,
+        ])->assertSessionHasErrors('assignee_id');
     }
 }

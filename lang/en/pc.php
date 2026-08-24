@@ -230,7 +230,7 @@ return [
     'consent_required' => 'Consent is required before submission',
     'new_record'  => 'New record',
     'save_draft'  => 'Save as draft',
-    'submit_assign' => 'Submit & assign doctor',
+    'submit_assign' => 'Submit record',
     'consent_statements' => [
         'The information provided is correct.',
         'I have no clear symptoms.',
@@ -412,6 +412,17 @@ return [
     'case_completed_ok' => 'Case marked as completed.',
     'patient_registered_ok' => 'Patient registered and assigned to the nurse.',
     'select_nurse'     => 'Select a nurse',
+
+    // Routing the case from the registration form (section 6)
+    'sec_assign'        => 'Assign the case',
+    'assign_hint'       => 'Optional — choose who takes this patient next. Leave it on “keep in clinic inbox” to let the clinic administrator route the case.',
+    'assign_none'       => 'Keep in clinic inbox',
+    'no_staff_for_role' => 'No one with this role is assigned to your clinic yet.',
+    'assign_note_nurse' => 'The record stays with this nurse to complete and verify.',
+    'assign_note_doctor'       => 'On submit the case goes straight to this doctor for the clinical breast examination.',
+    'assign_note_mammographer' => 'On submit the case goes straight to this mammographer for the mammogram report.',
+    'record_submitted_assigned' => 'Record submitted and assigned to :role :name.',
+    'assignee_not_in_clinic'    => 'The selected person does not hold that role in this clinic.',
     'menu'             => 'Menu',
     'close'            => 'Close',
     'record_details'      => 'Record details',

@@ -19,6 +19,18 @@
     $rUls   = $editing ? $referral->firstWhere('type','uls') : null;
     // Emirates ID reader endpoint: the configured local bridge, or the dev mock.
     $eidReaderUrl = config('services.emirates_id.reader_url') ?: route('tools.eid.read');
+
+    // Optional routing of the case straight from this form (needs assign_doctors).
+    $assignRoles = ['nurse', 'doctor', 'mammographer'];
+    $assignTarget = old('assign_role', $record->assigned_role ?? '');
+    $selectedAssignee = [
+        'nurse'        => $record->nurse_id,
+        'doctor'       => $record->assigned_doctor_id,
+        'mammographer' => $record->mammographer_id,
+    ];
+    if (old('assign_role')) {
+        $selectedAssignee[old('assign_role')] = old('assignee_id');
+    }
 @endphp
 
 @section('content')
@@ -29,7 +41,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ $editing ? route('nurse.record.update', $record) : route('nurse.record.store') }}"
+    <form method="POST" action="{{ $formAction }}"
           x-data="{
               result: '{{ old('cbe_result', $record->cbe_result ?? '') }}',
               consent: {{ old('consent', $record->consent_given) ? 'true' : 'false' }},
@@ -237,6 +249,42 @@
                 <label style="{{ $lbl }}">{{ __('pc.sign_date') }}<input type="date" name="signed_at" value="{{ old('signed_at', optional($record->signed_at)->toDateString() ?? now()->toDateString()) }}" style="{{ $inp }}" /></label>
             </div>
         </div>
+
+        {{-- 6. Route the case — optional, shown to staff who may assign (assign_doctors) --}}
+        @if ($canAssign)
+            <div style="{{ $card }}" x-data="{ target: '{{ $assignTarget }}' }">
+                {!! $sectionHead(6, __('pc.sec_assign')) !!}
+                <p style="margin:-8px 0 14px;font-size:13px;color:#6B6472;line-height:1.5;">{{ __('pc.assign_hint') }}</p>
+                <input type="hidden" name="assign_role" :value="target" />
+
+                <div style="display:flex;flex-wrap:wrap;gap:10px;">
+                    @foreach (['' => __('pc.assign_none'), 'nurse' => __('pc.role_nurse'), 'doctor' => __('pc.role_doctor'), 'mammographer' => __('pc.role_mammographer')] as $key => $label)
+                        <button type="button" @click="target='{{ $key }}'"
+                                style="cursor:pointer;padding:10px 18px;border:1.5px solid #DCC9D5;border-radius:999px;background:#fff;color:#6B4257;font-size:13px;font-weight:600;"
+                                :style="target==='{{ $key }}' ? { background:'#FCEFF5', borderColor:'#E6017E', color:'#E6017E' } : { background:'#fff', borderColor:'#DCC9D5', color:'#6B4257' }">{{ $label }}</button>
+                    @endforeach
+                </div>
+
+                {{-- One picker per role. Only the active one is enabled, so a single assignee_id is posted. --}}
+                @foreach ($assignRoles as $ar)
+                    <div x-show="target==='{{ $ar }}'" x-cloak style="margin-top:16px;max-width:420px;">
+                        <label style="{{ $lbl }}">{{ __('pc.assign_to') }}
+                            <select name="assignee_id" :disabled="target!=='{{ $ar }}'" :required="target==='{{ $ar }}'" style="{{ $inp }}background:#fff;">
+                                <option value="">— {{ __('pc.select_'.$ar) }} —</option>
+                                @foreach ($assignees[$ar] as $candidate)
+                                    <option value="{{ $candidate->id }}" @selected($selectedAssignee[$ar] == $candidate->id)>{{ $candidate->name }}</option>
+                                @endforeach
+                            </select>
+                        </label>
+                        @if ($assignees[$ar]->isEmpty())
+                            <p style="font-size:12px;color:#C62828;margin:7px 0 0;">{{ __('pc.no_staff_for_role') }}</p>
+                        @else
+                            <p style="font-size:12px;color:#9A8F97;margin:7px 0 0;line-height:1.5;">{{ __('pc.assign_note_'.$ar) }}</p>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        @endif
 
         {{-- Sticky footer --}}
         <div style="position:sticky;bottom:0;background:linear-gradient(0deg,#F4EEF1 70%,transparent);padding:14px 0 4px;display:flex;justify-content:space-between;align-items:center;">

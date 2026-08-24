@@ -109,19 +109,6 @@ class PageController extends Controller
         ]));
     }
 
-    public function clinicRegister(): View
-    {
-        $clinicIds = auth()->user()->clinicIds();
-        $nurses = \App\Models\User::role('nurse')
-            ->whereHas('clinics', fn ($q) => $q->whereIn('clinics.id', $clinicIds))
-            ->orderBy('name')->get();
-
-        return view('staff.clinic.register', $this->staff('clinic', 'clinic/register', [
-            'nurses'       => $nurses,
-            'eidReaderUrl' => config('services.emirates_id.reader_url') ?: route('tools.eid.read'),
-        ]));
-    }
-
     public function clinicAssign(): View
     {
         $clinicIds = auth()->user()->clinicIds();
