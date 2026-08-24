@@ -24,9 +24,22 @@
     .sec, .row, .head { break-inside: avoid; page-break-inside: avoid; }
     h3, .lede { break-after: avoid; page-break-after: avoid; }
 
-    /* Repeat the confidentiality strip at the foot of every printed page. */
-    .docfoot { position: fixed; left: 0; right: 0; bottom: 0; border-top: 1px solid #F3E7EE; }
-    .pagepad { padding-bottom: 12mm; }
+    /* Break control is unreliable on flex items, so the section stack becomes plain
+       block flow for print (the flex gap is replaced by a margin). */
+    .pagepad { display: block !important; }
+    .pagepad > * { margin-bottom: 24px; }
+
+    /* Page 1 is the summary (identity, result, recorded findings); the clinical
+       detail always opens page 2, so the layout is the same on every report. */
+    .pagebreak { break-before: page; page-break-before: always; }
+
+    /* A forced break inside a clipping box can be dropped — let the card overflow. */
+    .doc { overflow: visible !important; }
+
+    /* The confidentiality strip closes the report once, in flow. It must NOT be
+       position:fixed to repeat per page — a fixed box sits inside the page content
+       area without reserving space, so the browser lays text out underneath it. */
+    .docfoot { border-top: 1px solid #F3E7EE; }
   }
 </style>
 </head>
@@ -113,7 +126,7 @@
         @endif
       </div>
 
-      <div class="sec">
+      <div class="sec pagebreak">
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
           <h3 style="margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #6B4257;">{{ $vm['f']['map'] }}</h3>
           <div style="flex: 1; height: 1px; background: #F3E7EE;"></div>
