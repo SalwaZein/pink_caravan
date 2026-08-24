@@ -44,27 +44,27 @@
         <tr><td class="k">Clinic · العيادة</td><td colspan="3">{{ $record->clinic?->name ?? '—' }}</td></tr>
     </table>
 
+    {{-- Result + recommendation on a single line; the next steps close the report below. --}}
     <div class="section">
-        <h2>Result · النتيجة</h2>
-        <span class="badge {{ $result === 'abnormal' ? 'abnormal' : 'normal' }}">
-            {{ $result === 'abnormal' ? 'Further assessment recommended · يوصى بتقييم إضافي' : 'Normal · طبيعي' }}
-        </span>
+        <h2>Result &amp; recommendation · النتيجة والتوصية</h2>
+        <table style="width:100%;border-collapse:collapse;">
+            <tr>
+                <td style="padding:0;vertical-align:middle;white-space:nowrap;">
+                    <span class="badge {{ $result === 'abnormal' ? 'abnormal' : 'normal' }}">{{ $result === 'abnormal' ? 'Further assessment recommended · يوصى بتقييم إضافي' : 'Normal · طبيعي' }}</span>
+                </td>
+                <td style="padding:0 0 0 12px;vertical-align:middle;font-weight:bold;">{{ $ex?->recommendation ?: '—' }}</td>
+            </tr>
+        </table>
         @if ($result === 'abnormal')
             <div class="muted" style="margin-top:8px;font-size:11px;line-height:1.5;">A routine follow-up imaging check (mammogram) is recommended to complete your screening. This is a common next step and does not confirm any diagnosis. · يوصى بإجراء تصوير شعاعي للمتابعة لاستكمال الفحص، وهذه خطوة شائعة ولا تؤكّد أي تشخيص.</div>
         @endif
     </div>
 
-    @if ($ex)
+    @if ($ex?->comments)
         <div class="section">
-            <h2>Recommendation · التوصية</h2>
-            <div>{{ $ex->recommendation ?? '—' }}</div>
+            <h2>Comments · ملاحظات</h2>
+            <div>{{ $ex->comments }}</div>
         </div>
-        @if ($ex->comments)
-            <div class="section">
-                <h2>Comments · ملاحظات</h2>
-                <div>{{ $ex->comments }}</div>
-            </div>
-        @endif
     @endif
 
     @if ($record->referrals->isNotEmpty())
@@ -83,6 +83,19 @@
             </table>
         </div>
     @endif
+
+    {{-- Next steps — the last content block before the signature / verification blocks. --}}
+    <div class="section">
+        <h2>Next steps · الخطوات التالية</h2>
+        <table class="info">
+            @foreach (\App\Support\ReportPresenter::nextSteps($result === 'abnormal') as $i => $step)
+                <tr>
+                    <td class="k" style="width:30px;text-align:center;">{{ $i + 1 }}</td>
+                    <td>{{ $step }}</td>
+                </tr>
+            @endforeach
+        </table>
+    </div>
 
     <div class="section">
         <h2>Care team · فريق الرعاية</h2>

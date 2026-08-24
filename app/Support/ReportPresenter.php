@@ -79,6 +79,12 @@ class ReportPresenter
         ],
     ];
 
+    /** Patient next-steps checklist for a result — also used by the PDF renderer. */
+    public static function nextSteps(bool $abnormal): array
+    {
+        return self::NEXT_STEPS[$abnormal ? 'abnormal' : 'normal'];
+    }
+
     /** "EN · AR" bilingual join. */
     private static function bi(string $key): string
     {
@@ -186,7 +192,7 @@ class ReportPresenter
             'resultNote'  => self::en($abnormal ? 'abnormalNote' : 'normalNote'),
             'recText'     => $ex?->recommendation ?: self::en($abnormal ? 'abnormal' : 'normal'),
             'notesText'   => $ex?->comments ?: '—',
-            'nextSteps'   => self::NEXT_STEPS[$abnormal ? 'abnormal' : 'normal'],
+            'nextSteps'   => self::nextSteps($abnormal),
             'data'        => [
                 'refNo'      => $record->ref_no,
                 'issuedAt'   => optional($report->generated_at ?? $record->submitted_at)->format('d M Y'),

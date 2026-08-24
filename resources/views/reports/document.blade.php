@@ -67,23 +67,18 @@
 
     <div style="padding: 24px 34px 30px; display: flex; flex-direction: column; gap: 24px;">
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
-        <div style="border: 1px solid #F0E1E9; border-radius: 12px; padding: 16px 18px; background: {{ $vm['resultBg'] }};">
-          <div style="font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #6B6472;">{{ $vm['f']['result'] }}</div>
-          <div style="font-size: 26px; font-weight: 700; margin-top: 4px; color: {{ $vm['resultColor'] }};">{{ $vm['resultText'] }}</div>
-          <div style="font-size: 12.5px; color: #55505C; margin-top: 6px; line-height: 1.55;">{{ $vm['resultNote'] }}</div>
+      {{-- Result + recommendation on a single compact line (next steps close the report). --}}
+      <div>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; border: 1px solid #F0E1E9; border-inline-start: 4px solid {{ $vm['resultColor'] }}; border-radius: 12px; padding: 12px 16px; background: {{ $vm['resultBg'] }};">
+          <span style="font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #6B6472;">{{ $vm['f']['result'] }}</span>
+          <span style="font-size: 15px; font-weight: 700; color: {{ $vm['resultColor'] }};">{{ $vm['resultText'] }}</span>
+          <span style="color: #D3BFCC;">|</span>
+          <span style="font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #6B6472;">{{ $vm['f']['recommendation'] }}</span>
+          <span style="font-size: 14px; font-weight: 600; color: #2A2230;">{{ $vm['recText'] }}</span>
         </div>
-        <div style="border: 1px solid #F0E1E9; border-radius: 12px; padding: 16px 18px;">
-          <div style="font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #B7A9B2;">{{ $vm['f']['recommendation'] }}</div>
-          <div style="font-size: 16px; font-weight: 700; margin-top: 6px; line-height: 1.35;">{{ $vm['recText'] }}</div>
-          <div style="height: 1px; background: #F3E7EE; margin: 12px 0 10px;"></div>
-          <div style="font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: #B7A9B2; margin-bottom: 6px;">{{ $vm['f']['nextSteps'] }}</div>
-          <div style="display: flex; flex-direction: column; gap: 5px;">
-            @foreach ($vm['nextSteps'] as $st)
-              <div style="display: flex; gap: 8px; font-size: 12.5px; color: #453A44; line-height: 1.45;"><span style="color: #E6017E; font-weight: 700;">→</span><span>{{ $st }}</span></div>
-            @endforeach
-          </div>
-        </div>
+        @if ($vm['resultNote'])
+          <div style="font-size: 12px; color: #6B6472; line-height: 1.55; margin-top: 7px; padding-inline-start: 2px;">{{ $vm['resultNote'] }}</div>
+        @endif
       </div>
 
       <div>
@@ -153,6 +148,22 @@
           <div style="flex: 1; height: 1px; background: #F3E7EE;"></div>
         </div>
         <p style="margin: 0; font-size: 13.5px; line-height: 1.65; color: #453A44; background: #FDFAFC; border: 1px solid #F0E1E9; border-radius: 12px; padding: 14px 16px;">{{ $vm['notesText'] }}</p>
+      </div>
+
+      {{-- Next steps — the last thing the patient reads before the signature block. --}}
+      <div>
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+          <h3 style="margin: 0; font-size: 13px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #6B4257;">{{ $vm['f']['nextSteps'] }}</h3>
+          <div style="flex: 1; height: 1px; background: #F3E7EE;"></div>
+        </div>
+        <div style="border: 1px solid #F0E1E9; border-radius: 12px; padding: 14px 16px; background: #FDFAFC; display: flex; flex-direction: column; gap: 9px;">
+          @foreach ($vm['nextSteps'] as $i => $st)
+            <div style="display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: #453A44; line-height: 1.5;">
+              <span style="flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background: #FCE7F0; color: #E6017E; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{ $i + 1 }}</span>
+              <span>{{ $st }}</span>
+            </div>
+          @endforeach
+        </div>
       </div>
 
       <div style="display: grid; grid-template-columns: 1fr 240px; gap: 16px; align-items: stretch; border-top: 1px solid #F3E7EE; padding-top: 20px;">
