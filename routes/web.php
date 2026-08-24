@@ -4,7 +4,6 @@ use App\Http\Controllers\AssignmentController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\ClinicController;
-use App\Http\Controllers\ClinicPatientController;
 use App\Http\Controllers\EmiratesIdController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\ExportController;
@@ -58,14 +57,16 @@ Route::middleware('auth')->get('/tools/emirates-id/read', [EmiratesIdController:
 Route::middleware(['auth', 'role:nurse'])->group(function () {
     Route::get('/nurse/queue',    [PageController::class, 'nurseQueue'])->name('nurse.queue');
     Route::get('/nurse/patients', [PageController::class, 'nursePatients'])->name('nurse.patients');
+});
 
-    // Patient History & Record Sheet (Form 3) — needs the fill_record_sheet permission
-    Route::middleware('can:fill_record_sheet')->group(function () {
-        Route::get('/nurse/record',                [RecordController::class, 'create'])->name('nurse.record');
-        Route::post('/nurse/record',               [RecordController::class, 'store'])->name('nurse.record.store');
-        Route::get('/nurse/record/{record}/edit',  [RecordController::class, 'edit'])->name('nurse.record.edit');
-        Route::put('/nurse/record/{record}',       [RecordController::class, 'update'])->name('nurse.record.update');
-    });
+// ---- Patient registration & Record Sheet (Form 3) ----
+// Gated by the fill_record_sheet permission rather than by a single role: the nurse AND the
+// clinic administrator both register the full patient profile (and may route the case on).
+Route::middleware(['auth', 'can:fill_record_sheet'])->group(function () {
+    Route::get('/nurse/record',                [RecordController::class, 'create'])->name('nurse.record');
+    Route::post('/nurse/record',               [RecordController::class, 'store'])->name('nurse.record.store');
+    Route::get('/nurse/record/{record}/edit',  [RecordController::class, 'edit'])->name('nurse.record.edit');
+    Route::put('/nurse/record/{record}',       [RecordController::class, 'update'])->name('nurse.record.update');
 });
 
 // ---- Doctor (auth) ----
@@ -96,9 +97,11 @@ Route::middleware(['auth', 'can:manage_mammograms'])->group(function () {
 // ---- Clinic administrator (auth) ----
 Route::middleware(['auth', 'role:clinic_admin'])->group(function () {
     Route::get('/clinic/queue',    [PageController::class, 'clinicQueue'])->name('clinic.queue');
-    Route::get('/clinic/register', [PageController::class, 'clinicRegister'])->name('clinic.register');
-    Route::post('/clinic/register', [ClinicPatientController::class, 'store'])
-        ->middleware('can:register_patients')->name('clinic.register.store');
+    // Register patient = the full Patient History & Record Sheet (the same form the nurse uses).
+    Route::middleware('can:fill_record_sheet')->group(function () {
+        Route::get('/clinic/register',  [RecordController::class, 'create'])->name('clinic.register');
+        Route::post('/clinic/register', [RecordController::class, 'store'])->name('clinic.register.store');
+    });
     Route::get('/clinic/assign',   [PageController::class, 'clinicAssign'])->name('clinic.assign');
     Route::get('/clinic/reports',  [PageController::class, 'clinicReports'])->name('clinic.reports');
     Route::get('/clinic/record/{record}', [PageController::class, 'clinicRecord'])->name('clinic.record.show');
