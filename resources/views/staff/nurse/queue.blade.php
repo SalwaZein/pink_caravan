@@ -24,7 +24,7 @@
                     <div>{{ $p['age'] }}</div>
                     <div><span style="display:inline-block;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;color:{{ $p['stC'] }};background:{{ $p['stBg'] }};">{{ $p['stLabel'] }}</span></div>
                     <div style="font-size:12.5px;color:#6B6472;">{{ $p['doc'] }}</div>
-                    <div style="text-align:end;"><a href="{{ $p['openUrl'] }}" role="button" style="cursor:pointer;font-size:12.5px;font-weight:700;color:#E6017E;padding:6px 12px;border:1px solid #F6BFD9;border-radius:8px;text-decoration:none;">{{ $p['editable'] ? __('pc.continue_draft') : __('pc.open') }}</a></div>
+                    <div style="text-align:end;"><a href="{{ $p['openUrl'] }}" role="button" style="cursor:pointer;font-size:12.5px;font-weight:700;color:#E6017E;padding:6px 12px;border:1px solid #F6BFD9;border-radius:8px;text-decoration:none;">{{ $p['locked'] ? __('pc.view') : ($p['editable'] ? __('pc.continue_draft') : __('pc.open')) }}</a></div>
                 </div>
             @empty
                 <div style="padding:34px 20px;text-align:center;color:#9A8F97;font-size:14px;grid-column:1 / -1;">{{ __('pc.no_records') }}</div>

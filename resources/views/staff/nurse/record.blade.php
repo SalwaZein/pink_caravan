@@ -3,6 +3,8 @@
 
 @php
     $editing = $record->exists;
+    // Past draft but still open: saving edits must keep the case where it is in the flow.
+    $inWorkflow = $editing && ! $readOnly && $record->status !== \App\Models\PatientHistoryRecord::DRAFT;
     $ph  = $record->personal_history ?? [];
     $phn = $record->personal_history_notes ?? [];
     $fh  = $record->family_history ?? [];
@@ -91,6 +93,15 @@
           class="pc-anim" style="max-width:900px;margin:0 auto;padding-bottom:30px;">
         @csrf
         @if ($editing) @method('PUT') @endif
+
+        @if ($readOnly)
+            <div style="margin-bottom:16px;display:flex;align-items:center;gap:10px;background:#E4F4EF;border:1px solid #BFE6D5;color:#2E7D32;font-size:13px;font-weight:600;padding:12px 18px;border-radius:12px;">
+                <span>🔒</span><span>{{ __('pc.case_closed_readonly') }}</span>
+            </div>
+        @endif
+
+        {{-- Everything is editable while the case is open; a closed case renders disabled. --}}
+        <fieldset @disabled($readOnly) style="border:0;padding:0;margin:0;min-width:0;">
 
         {{-- 1. Registration --}}
         <div style="{{ $card }}">
@@ -286,15 +297,32 @@
             </div>
         @endif
 
+        </fieldset>
+
         {{-- Sticky footer --}}
-        <div style="position:sticky;bottom:0;background:linear-gradient(0deg,#F4EEF1 70%,transparent);padding:14px 0 4px;display:flex;justify-content:space-between;align-items:center;">
-            <button type="submit" name="action" value="draft" style="cursor:pointer;color:#6B6472;font-weight:600;font-size:14px;padding:12px 22px;border:1px solid #E3D2DC;border-radius:11px;background:#fff;">{{ __('pc.save_draft') }}</button>
-            <div style="display:flex;align-items:center;gap:14px;">
-                <span x-show="!consent" style="font-size:12.5px;color:#C62828;">{{ __('pc.consent_required') }}</span>
-                <span x-show="consent && !hasSignature" x-cloak style="font-size:12.5px;color:#C62828;">{{ __('pc.signature_required') }}</span>
-                <button type="submit" name="action" value="submit" :disabled="!consent || !hasSignature" style="cursor:pointer;color:#fff;font-weight:700;font-size:14px;padding:12px 26px;border:none;border-radius:11px;box-shadow:0 5px 15px rgba(230,1,126,.2);background:#E3D2DC;" :style="(consent && hasSignature) ? { background:'linear-gradient(90deg,#E6017E,#C0116E)', cursor:'pointer' } : { background:'#E3D2DC', cursor:'not-allowed' }">{{ __('pc.submit_assign') }} →</button>
+        @if ($readOnly)
+            <div style="position:sticky;bottom:0;background:linear-gradient(0deg,#F4EEF1 70%,transparent);padding:14px 0 4px;display:flex;justify-content:flex-end;">
+                <a href="{{ $backUrl }}" role="button" style="cursor:pointer;color:#6B6472;font-weight:600;font-size:14px;padding:12px 22px;border:1px solid #E3D2DC;border-radius:11px;background:#fff;text-decoration:none;">{{ __('pc.back') }}</a>
             </div>
-        </div>
+        @elseif ($inWorkflow)
+            {{-- The case has already left draft: saving must not re-submit or re-draft it. --}}
+            <div style="position:sticky;bottom:0;background:linear-gradient(0deg,#F4EEF1 70%,transparent);padding:14px 0 4px;display:flex;justify-content:space-between;align-items:center;">
+                <a href="{{ $backUrl }}" role="button" style="cursor:pointer;color:#6B6472;font-weight:600;font-size:14px;padding:12px 22px;border:1px solid #E3D2DC;border-radius:11px;background:#fff;text-decoration:none;">{{ __('pc.back') }}</a>
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <span style="font-size:12.5px;color:#9A8F97;">{{ __('pc.edit_open_case_hint') }}</span>
+                    <button type="submit" name="action" value="draft" style="cursor:pointer;background:linear-gradient(90deg,#E6017E,#C0116E);color:#fff;font-weight:700;font-size:14px;padding:12px 26px;border:none;border-radius:11px;box-shadow:0 5px 15px rgba(230,1,126,.2);">{{ __('pc.save_changes') }}</button>
+                </div>
+            </div>
+        @else
+            <div style="position:sticky;bottom:0;background:linear-gradient(0deg,#F4EEF1 70%,transparent);padding:14px 0 4px;display:flex;justify-content:space-between;align-items:center;">
+                <button type="submit" name="action" value="draft" style="cursor:pointer;color:#6B6472;font-weight:600;font-size:14px;padding:12px 22px;border:1px solid #E3D2DC;border-radius:11px;background:#fff;">{{ __('pc.save_draft') }}</button>
+                <div style="display:flex;align-items:center;gap:14px;">
+                    <span x-show="!consent" style="font-size:12.5px;color:#C62828;">{{ __('pc.consent_required') }}</span>
+                    <span x-show="consent && !hasSignature" x-cloak style="font-size:12.5px;color:#C62828;">{{ __('pc.signature_required') }}</span>
+                    <button type="submit" name="action" value="submit" :disabled="!consent || !hasSignature" style="cursor:pointer;color:#fff;font-weight:700;font-size:14px;padding:12px 26px;border:none;border-radius:11px;box-shadow:0 5px 15px rgba(230,1,126,.2);background:#E3D2DC;" :style="(consent && hasSignature) ? { background:'linear-gradient(90deg,#E6017E,#C0116E)', cursor:'pointer' } : { background:'#E3D2DC', cursor:'not-allowed' }">{{ __('pc.submit_assign') }} →</button>
+                </div>
+            </div>
+        @endif
     </form>
 </x-staff-shell>
 @endsection

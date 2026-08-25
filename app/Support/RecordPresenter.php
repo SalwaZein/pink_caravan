@@ -55,6 +55,8 @@ class RecordPresenter
             'resLabel' => $result['label'], 'resC' => $result['c'], 'resBg' => $result['bg'],
             'doc'      => $r->doctor?->name ?? '—',
             'editable' => $r->status === PatientHistoryRecord::DRAFT,
+            // Case data stays editable until the clinic admin closes the case.
+            'locked'   => ! $r->isEditable(),
             'openUrl'  => route($openRoute, $r),
         ];
     }

@@ -174,6 +174,11 @@
         </div>
 
         {{-- Sign & submit --}}
+        @if ($exam->status === 'submitted')
+            <div style="margin-bottom:12px;display:flex;align-items:center;gap:10px;background:#FBEEDD;border:1px solid #F0D5AE;color:#B25E00;font-size:13px;font-weight:600;padding:12px 18px;border-radius:12px;">
+                <span>✎</span><span>{{ __('pc.exam_submitted_notice') }}</span>
+            </div>
+        @endif
         <div style="{{ $card }}padding:20px 24px;display:flex;justify-content:space-between;align-items:center;">
             <div style="display:flex;align-items:center;gap:14px;">
                 <div style="font-size:13px;color:#6B6472;">{{ __('pc.examiner') }}: <b style="color:#2A2230;">{{ auth()->user()->name }}</b></div>
@@ -181,7 +186,7 @@
             </div>
             <div style="display:flex;align-items:center;gap:14px;">
                 <span x-show="!cbe" x-cloak style="font-size:12.5px;color:#C62828;">{{ __('pc.cbe_exam_result') }}?</span>
-                <button type="submit" name="action" value="submit" :disabled="!cbe" style="cursor:pointer;color:#fff;font-weight:700;font-size:14px;padding:13px 28px;border:none;border-radius:11px;box-shadow:0 5px 15px rgba(230,1,126,.2);background:#E3D2DC;" :style="cbe ? { background:'linear-gradient(90deg,#E6017E,#C0116E)', cursor:'pointer' } : { background:'#E3D2DC', cursor:'not-allowed' }">✍ {{ __('pc.sign_submit') }}</button>
+                <button type="submit" name="action" value="submit" :disabled="!cbe" style="cursor:pointer;color:#fff;font-weight:700;font-size:14px;padding:13px 28px;border:none;border-radius:11px;box-shadow:0 5px 15px rgba(230,1,126,.2);background:#E3D2DC;" :style="cbe ? { background:'linear-gradient(90deg,#E6017E,#C0116E)', cursor:'pointer' } : { background:'#E3D2DC', cursor:'not-allowed' }">✍ {{ $exam->status === 'submitted' ? __('pc.update_resubmit') : __('pc.sign_submit') }}</button>
             </div>
         </div>
     </form>
