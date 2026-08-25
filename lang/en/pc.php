@@ -407,7 +407,14 @@ return [
     // ---- clinical workflow ----
     'record_submitted' => 'Record submitted — awaiting doctor assignment.',
     'draft_saved'      => 'Draft saved.',
-    'record_locked'    => 'This record is already submitted and can no longer be edited.',
+    'record_locked'    => 'This case is completed and can no longer be edited.',
+
+    // Editing an open case (locked only once the admin marks it completed)
+    'case_closed_readonly' => 'This case is completed — the record is shown read-only.',
+    'edit_open_case_hint'  => 'The case stays where it is in the workflow.',
+    'save_changes'         => 'Save changes',
+    'exam_submitted_notice'=> 'This examination has been submitted. Saving again updates it and regenerates the report.',
+    'update_resubmit'      => 'Update & re-sign',
     'assigned_ok'      => 'Case assigned.',
     'case_completed_ok' => 'Case marked as completed.',
     'patient_registered_ok' => 'Patient registered and assigned to the nurse.',

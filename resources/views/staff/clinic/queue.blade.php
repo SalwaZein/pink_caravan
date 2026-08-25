@@ -20,7 +20,10 @@
                     <div style="font-size:12.5px;color:#6B6472;">{{ $p['doc'] }}</div>
                     <div style="text-align:end;display:flex;gap:8px;justify-content:flex-end;">
                         <a href="{{ route('clinic.record.show', $p['id']) }}" role="button" style="cursor:pointer;font-size:12.5px;font-weight:700;color:#6B4257;padding:6px 12px;border:1px solid #E3D2DC;border-radius:8px;text-decoration:none;">{{ __('pc.view') }}</a>
-                        <a href="{{ url('/clinic/assign') }}" role="button" style="cursor:pointer;font-size:12.5px;font-weight:700;color:#E6017E;padding:6px 12px;border:1px solid #F6BFD9;border-radius:8px;text-decoration:none;">{{ __('pc.assign') }}</a>
+                        @unless ($p['locked'])
+                            <a href="{{ $p['openUrl'] }}" role="button" style="cursor:pointer;font-size:12.5px;font-weight:700;color:#E6017E;padding:6px 12px;border:1px solid #F6BFD9;border-radius:8px;text-decoration:none;">{{ __('pc.edit') }}</a>
+                        @endunless
+                        <a href="{{ url('/clinic/assign') }}" role="button" style="cursor:pointer;font-size:12.5px;font-weight:700;color:#6B4257;padding:6px 12px;border:1px solid #E3D2DC;border-radius:8px;text-decoration:none;">{{ __('pc.assign') }}</a>
                     </div>
                 </div>
             @endforeach

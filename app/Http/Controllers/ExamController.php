@@ -23,6 +23,10 @@ class ExamController extends Controller
     {
         $this->authorizeDoctor($record);
 
+        if ($record->isClosed()) {
+            return redirect()->route('doctor.completed')->with('status', __('pc.record_locked'));
+        }
+
         // Only pull a case into review while it is actually assigned to this doctor
         // (not, say, one the admin has since routed to a mammographer).
         if ($record->status === PatientHistoryRecord::ASSIGNED
@@ -45,9 +49,9 @@ class ExamController extends Controller
     {
         $this->authorizeDoctor($record);
 
-        // Once the doctor has submitted the exam it is locked, even after the admin
-        // routes the case onward (returned → mammographer → completed).
-        if ($record->examination?->status === 'submitted') {
+        // The exam stays editable — including after it has been submitted — until the
+        // clinic admin closes the case. Re-submitting regenerates the report.
+        if ($record->isClosed()) {
             return redirect()->route('doctor.completed')->with('status', __('pc.record_locked'));
         }
 
@@ -90,7 +94,13 @@ class ExamController extends Controller
 
             if ($isSubmit) {
                 // Exam done → the case returns to the clinic admin to be closed or routed on.
-                $record->update(['status' => PatientHistoryRecord::RETURNED]);
+                // If the admin has already routed it elsewhere (e.g. to a mammographer) a
+                // later correction must not yank the case back out of that queue.
+                if ($record->assigned_role === PatientHistoryRecord::ROLE_DOCTOR) {
+                    $record->update(['status' => PatientHistoryRecord::RETURNED]);
+                }
+
+                // Always regenerate: the report must reflect the corrected exam.
                 ReportService::generate($record->fresh(['patient', 'examination', 'referrals']));
                 Audit::log('exam.submitted', $record, "{$record->ref_no} — {$result}");
             } else {

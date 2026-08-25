@@ -13,6 +13,9 @@
                 <div style="text-align:end;display:flex;gap:12px;justify-content:flex-end;">
                     <a href="{{ route('reports.document', $p['id']) }}" target="_blank" style="text-decoration:none;font-size:12.5px;font-weight:700;color:#E6017E;">📄 {{ __('pc.view_report') }}</a>
                     <a href="{{ route('doctor.exam.report', $p['id']) }}" target="_blank" style="text-decoration:none;font-size:12.5px;font-weight:700;color:#9A8F97;">PDF</a>
+                    @unless ($p['locked'])
+                        <a href="{{ route('doctor.exam', $p['id']) }}" style="text-decoration:none;font-size:12.5px;font-weight:700;color:#6B4257;">✎ {{ __('pc.edit') }}</a>
+                    @endunless
                 </div>
             </div>
         @endforeach

@@ -80,14 +80,13 @@ class RecordController extends Controller
         return redirect()->route($this->homeRoute())->with('status', $this->savedMessage($record, $isSubmit));
     }
 
-    /** Edit an existing draft. */
+    /**
+     * Edit an open case — the form stays available until the admin closes it.
+     * A closed case still opens, but read-only, so staff can review what was recorded.
+     */
     public function edit(PatientHistoryRecord $record): RedirectResponse|View
     {
         $this->authorizeClinic($record);
-
-        if (! $record->isEditableByNurse()) {
-            return redirect()->route($this->homeRoute())->with('status', __('pc.record_locked'));
-        }
 
         $record->load('patient', 'referrals');
 
@@ -98,7 +97,7 @@ class RecordController extends Controller
     {
         $this->authorizeClinic($record);
 
-        if (! $record->isEditableByNurse()) {
+        if (! $record->isEditable()) {
             return redirect()->route($this->homeRoute())->with('status', __('pc.record_locked'));
         }
 
@@ -146,6 +145,8 @@ class RecordController extends Controller
                 ? route('nurse.record.update', $record)
                 : ($isClinicAdmin ? route('clinic.register.store') : route('nurse.record.store')),
             'backUrl'     => route($this->homeRoute()),
+            // A closed case renders as a disabled form — reviewable, not editable.
+            'readOnly'    => $record->exists && ! $record->isEditable(),
             'canAssign'   => auth()->user()->can('assign_doctors'),
             'assignees'   => $this->assignees($clinicId),
         ];
@@ -285,6 +286,12 @@ class RecordController extends Controller
             'signed_at'              => $data['signed_at'] ?? null,
         ]);
 
+        // A record that has already left draft keeps its place in the workflow when
+        // it is edited — only a draft can be promoted to submitted (or stay a draft).
+        if ($record->exists && $record->status !== PatientHistoryRecord::DRAFT) {
+            return $record;
+        }
+
         if ($isSubmit) {
             $record->status = PatientHistoryRecord::SUBMITTED;
             $record->submitted_at = now();
@@ -344,16 +351,24 @@ class RecordController extends Controller
             return;
         }
 
+        // Re-saving an open case must not shunt it backwards: only an actual change of
+        // role or assignee re-opens it in someone's queue. Editing a case that is
+        // already in review with the same doctor leaves it exactly where it is.
+        $currentAssignee = $role === PatientHistoryRecord::ROLE_DOCTOR
+            ? $record->assigned_doctor_id
+            : $record->mammographer_id;
+        $changed = $record->assigned_role !== $role || $currentAssignee !== $assignee->id;
+
         $record->forceFill([
             'assigned_role' => $role,
             ...($role === PatientHistoryRecord::ROLE_DOCTOR
                 ? ['assigned_doctor_id' => $assignee->id, 'mammographer_id' => null]
                 : ['mammographer_id' => $assignee->id, 'assigned_doctor_id' => null]),
             // Only a submitted record actually moves into the assignee's queue.
-            ...($isSubmit ? ['status' => PatientHistoryRecord::ASSIGNED] : []),
+            ...($isSubmit && $changed ? ['status' => PatientHistoryRecord::ASSIGNED] : []),
         ])->save();
 
-        if ($isSubmit) {
+        if ($isSubmit && $changed) {
             Audit::log('record.assigned', $record, "{$record->ref_no} → ".__('pc.role_'.$role).": {$assignee->name}");
         }
     }

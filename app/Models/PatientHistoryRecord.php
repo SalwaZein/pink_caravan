@@ -95,9 +95,20 @@ class PatientHistoryRecord extends Model
         return $this->hasOne(Report::class, 'record_id');
     }
 
-    public function isEditableByNurse(): bool
+    /** Closed for good: the clinic admin has marked the case completed. */
+    public function isClosed(): bool
     {
-        return $this->status === self::DRAFT;
+        return in_array($this->status, [self::COMPLETED, self::REPORT_SENT], true);
+    }
+
+    /**
+     * Case data — the nurse's Form 3 and the doctor's Form 2 — stays editable by the
+     * nurse, the doctor and the clinic admin for as long as the case is open. Closing
+     * it (admin marks it completed) is what freezes the record.
+     */
+    public function isEditable(): bool
+    {
+        return ! $this->isClosed();
     }
 
     /** The user the case is currently assigned to (doctor or mammographer), if any. */
