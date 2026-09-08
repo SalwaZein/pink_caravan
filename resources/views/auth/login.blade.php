@@ -78,9 +78,20 @@
                 </form>
 
                 @if (config('app.debug'))
-                    <div style="margin-top:20px;padding:12px 14px;background:#FAF4F7;border-radius:12px;font-size:11.5px;color:#9A8F97;line-height:1.6;">
-                        <div style="font-weight:700;color:#6B4257;margin-bottom:4px;">{{ __('pc.demo_accounts') }}</div>
-                        anish@focp.ae · l.hassan@focp.ae · s.nuaimi@focp.ae · mariam.s@focp.ae
+                    {{-- Read from App\Support\DemoStaff — the same list UsersSeeder creates. --}}
+                    <div style="margin-top:20px;padding:14px 16px;background:#FAF4F7;border-radius:12px;font-size:11.5px;color:#9A8F97;line-height:1.5;">
+                        <div style="font-weight:700;color:#6B4257;margin-bottom:8px;">{{ __('pc.demo_accounts') }}</div>
+                        <div style="display:grid;gap:6px;">
+                            @foreach (\App\Support\DemoStaff::all() as $acct)
+                                <div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;">
+                                    <span style="flex:0 0 auto;min-width:104px;font-weight:700;color:#E6017E;">{{ __('pc.role_'.$acct['role']) }}</span>
+                                    <span style="flex:1 1 auto;min-width:0;color:#6B4257;font-weight:600;direction:ltr;text-align:start;word-break:break-all;">{{ $acct['email'] }}</span>
+                                    @if (! empty($acct['clinics']))
+                                        <span style="flex:0 0 auto;font-size:10.5px;color:#B7A9B2;">{{ implode(' · ', $acct['clinics']) }}</span>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
                     </div>
                 @endif
             </div>
