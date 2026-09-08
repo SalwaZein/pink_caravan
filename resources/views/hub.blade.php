@@ -5,12 +5,16 @@
 @php
     // Public flows are open; staff roles go through the login page (routed by role after sign-in).
     $loginUrl = route('login');
+    // Business feedback: the service-booking box was replaced by the mammographer
+    // login (bookings stay reachable at /booking for partners with the link), and a
+    // dedicated volunteer login was added for the WhatsApp token & queue desk.
     $roleCards = [
-        ['icon' => '🏢', 'tint' => '#FCE7F0', 'title' => __('pc.role_partner_title'), 'desc' => __('pc.role_partner_desc'), 'url' => url('/booking'), 'cta' => __('pc.enter')],
+        ['icon' => '🩻', 'tint' => '#E4F4EF', 'title' => __('pc.role_mammo_title'),   'desc' => __('pc.role_mammo_desc'),   'url' => $loginUrl, 'cta' => __('pc.staff_login_cta')],
         ['icon' => '💗', 'tint' => '#F3E6FA', 'title' => __('pc.role_patient_title'), 'desc' => __('pc.role_patient_desc'), 'url' => url('/patient'), 'cta' => __('pc.enter')],
         ['icon' => '🩺', 'tint' => '#E4F4EF', 'title' => __('pc.role_nurse_title'),   'desc' => __('pc.role_nurse_desc'),   'url' => $loginUrl, 'cta' => __('pc.staff_login_cta')],
         ['icon' => '👩‍⚕️', 'tint' => '#E6EEFB', 'title' => __('pc.role_doctor_title'),  'desc' => __('pc.role_doctor_desc'),  'url' => $loginUrl, 'cta' => __('pc.staff_login_cta')],
         ['icon' => '🗂️', 'tint' => '#FDEFE0', 'title' => __('pc.role_clinic_title'),  'desc' => __('pc.role_clinic_desc'),  'url' => $loginUrl, 'cta' => __('pc.staff_login_cta')],
+        ['icon' => '🎟️', 'tint' => '#EAF1E6', 'title' => __('pc.role_volunteer_title'), 'desc' => __('pc.role_volunteer_desc'), 'url' => $loginUrl, 'cta' => __('pc.staff_login_cta')],
         ['icon' => '📊', 'tint' => '#FBE4EC', 'title' => __('pc.role_super_title'),   'desc' => __('pc.role_super_desc'),   'url' => $loginUrl, 'cta' => __('pc.staff_login_cta')],
     ];
 @endphp
@@ -28,7 +32,7 @@
         <h1 style="font-size:44px;line-height:1.08;font-weight:700;margin:0 0 14px;max-width:760px;letter-spacing:-.02em;">{{ __('pc.hub_title') }}</h1>
         <p style="font-size:17px;color:#6B6472;margin:0 0 44px;max-width:560px;line-height:1.5;">{{ __('pc.hub_sub') }}</p>
 
-        <div style="display:grid;grid-template-columns:repeat(3, minmax(220px, 260px));gap:20px;width:100%;max-width:860px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(220px, 260px));gap:20px;width:100%;max-width:860px;justify-content:center;">
             @foreach ($roleCards as $r)
                 <a href="{{ $r['url'] }}" class="pc-anim pc-card-hover"
                    style="cursor:pointer;background:#fff;border:1px solid #F0E1E9;border-radius:20px;padding:26px 22px;text-align:start;box-shadow:0 6px 22px rgba(120,60,90,.06);text-decoration:none;color:inherit;display:block;">

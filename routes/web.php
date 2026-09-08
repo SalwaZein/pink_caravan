@@ -10,6 +10,7 @@ use App\Http\Controllers\ExportController;
 use App\Http\Controllers\MammographerController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PatientController;
+use App\Http\Controllers\QueueController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RecordController;
 use App\Http\Controllers\ServiceBookingController;
@@ -85,13 +86,31 @@ Route::middleware(['auth', 'role:doctor'])->group(function () {
     });
 });
 
-// ---- Mammographer (auth) — manual PC number + post-campaign mammogram report ----
+// ---- Mammographer (auth) — patient file, findings and the mammography report ----
 Route::middleware(['auth', 'can:manage_mammograms'])->group(function () {
     Route::get('/mammographer/queue',              [MammographerController::class, 'queue'])->name('mammographer.queue');
     Route::get('/mammographer/record/{record}',    [MammographerController::class, 'edit'])->name('mammographer.record');
     Route::put('/mammographer/record/{record}',    [MammographerController::class, 'update'])->name('mammographer.record.update');
+    // The initial patient form (Form 3) as registered, read-only.
+    Route::get('/mammographer/record/{record}/history', [MammographerController::class, 'history'])->name('mammographer.record.history');
     Route::get('/mammographer/record/{record}/report', [MammographerController::class, 'viewReport'])->name('mammographer.record.report');
     Route::post('/mammographer/record/{record}/send', [MammographerController::class, 'send'])->name('mammographer.record.send');
+
+    // Mammography findings form — its own capability so it can be granted alone.
+    Route::middleware('can:record_mammogram_findings')->group(function () {
+        Route::get('/mammographer/record/{record}/findings', [MammographerController::class, 'findings'])->name('mammographer.findings');
+        Route::put('/mammographer/record/{record}/findings', [MammographerController::class, 'saveFindings'])->name('mammographer.findings.save');
+    });
+});
+
+// ---- Visitor queue & WhatsApp tokens (volunteer desk; also open to clinic/super admins) ----
+Route::middleware(['auth', 'can:manage_queue'])->prefix('queue')->name('queue.')->group(function () {
+    Route::get('/',                    [QueueController::class, 'index'])->name('index');
+    Route::post('/',                   [QueueController::class, 'store'])->name('store');
+    Route::post('/{token}/call',       [QueueController::class, 'call'])->name('call');
+    Route::post('/{token}/enter',      [QueueController::class, 'enter'])->name('enter');
+    Route::post('/{token}/close',      [QueueController::class, 'close'])->name('close');
+    Route::post('/{token}/resend',     [QueueController::class, 'resend'])->name('resend');
 });
 
 // ---- Clinic administrator (auth) ----

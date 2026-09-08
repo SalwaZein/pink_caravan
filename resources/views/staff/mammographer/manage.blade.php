@@ -41,9 +41,58 @@
             </div>
         </div>
 
+        {{-- The patient's file: the form filled in at registration, and the mammography findings. --}}
+        <div style="{{ $card }}">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                <div style="width:28px;height:28px;border-radius:8px;background:#FCEFF5;color:#E6017E;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">📁</div>
+                <h3 style="margin:0;font-size:16px;font-weight:700;">{{ __('pc.patient_file') }}</h3>
+            </div>
+            <p style="font-size:12px;color:#9A8F97;margin:0 0 16px;">{{ __('pc.patient_file_hint') }}</p>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;" class="pc-stack-sm">
+                {{-- Review the initial patient form before assessing. --}}
+                <a href="{{ route('mammographer.record.history', $record) }}"
+                   style="display:block;text-decoration:none;color:inherit;border:1px solid #E3D2DC;border-radius:12px;padding:16px 18px;background:#FDF8FA;">
+                    <div style="font-size:20px;margin-bottom:6px;">📝</div>
+                    <div style="font-size:14px;font-weight:700;">{{ __('pc.view_initial_form') }}</div>
+                    <div style="font-size:12px;color:#9A8F97;margin-top:3px;line-height:1.45;">{{ __('pc.view_initial_form_hint') }}</div>
+                    <div style="margin-top:10px;font-size:12.5px;font-weight:700;color:#E6017E;">{{ __('pc.open') }} →</div>
+                </a>
+
+                {{-- Record / review the mammography findings. --}}
+                @can('record_mammogram_findings')
+                    <a href="{{ route('mammographer.findings', $record) }}"
+                       style="display:block;text-decoration:none;color:inherit;border:1px solid #E3D2DC;border-radius:12px;padding:16px 18px;background:#FDF8FA;">
+                        <div style="font-size:20px;margin-bottom:6px;">🩺</div>
+                        <div style="font-size:14px;font-weight:700;">{{ __('pc.findings_title') }}</div>
+                        <div style="font-size:12px;color:#9A8F97;margin-top:3px;line-height:1.45;">
+                            @if ($finding?->isSubmitted())
+                                {{ __('pc.findings_submitted') }} · {{ optional($finding->submitted_at)->format('d M Y, H:i') }}
+                                @if ($finding->highestBirads() !== null)
+                                    · {{ __('pc.birads_'.$finding->highestBirads()) }}
+                                @endif
+                            @elseif ($finding)
+                                {{ __('pc.findings_draft_saved') }}
+                            @else
+                                {{ __('pc.findings_none_yet') }}
+                            @endif
+                        </div>
+                        <div style="margin-top:10px;font-size:12.5px;font-weight:700;color:#E6017E;">{{ $finding?->isSubmitted() ? __('pc.view') : __('pc.open') }} →</div>
+                    </a>
+                @endcan
+            </div>
+        </div>
+
+        @unless ($canEdit)
+            <div style="margin-bottom:16px;display:flex;align-items:center;gap:10px;background:#E4F4EF;border:1px solid #BFE6D5;color:#2E7D32;font-size:13px;font-weight:600;padding:12px 18px;border-radius:12px;">
+                <span>🔒</span><span>{{ __('pc.report_already_sent') }}</span>
+            </div>
+        @endunless
+
         {{-- Editable patient details + mammogram report upload --}}
         <form method="POST" action="{{ route('mammographer.record.update', $record) }}" enctype="multipart/form-data">
             @csrf @method('PUT')
+            <fieldset @disabled(! $canEdit) style="border:0;padding:0;margin:0;min-width:0;">
             <div style="{{ $card }}">
                 <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
                     <div style="width:28px;height:28px;border-radius:8px;background:#FCEFF5;color:#E6017E;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">✎</div>
@@ -76,6 +125,7 @@
                     <button type="submit" style="cursor:pointer;background:#fff;color:#6B4257;font-weight:700;font-size:13.5px;padding:11px 22px;border:1px solid #E3D2DC;border-radius:11px;">{{ __('pc.save_report') }}</button>
                 </div>
             </div>
+            </fieldset>
         </form>
 
         {{-- Send to patient --}}
@@ -106,7 +156,8 @@
             </div>
             <form method="POST" action="{{ route('mammographer.record.send', $record) }}">
                 @csrf
-                <button type="submit" @disabled(! $record->mammogram_report_path) style="cursor:pointer;background:{{ $record->mammogram_report_path ? 'linear-gradient(90deg,#E6017E,#C0116E)' : '#E3D2DC' }};color:#fff;font-weight:700;font-size:14px;padding:12px 26px;border:none;border-radius:11px;box-shadow:0 5px 15px rgba(230,1,126,.2);">✉ {{ $record->report_sent_at ? __('pc.send_report') : __('pc.send_report') }}</button>
+                @php($canSend = $record->mammogram_report_path && $canEdit)
+                <button type="submit" @disabled(! $canSend) style="cursor:pointer;background:{{ $canSend ? 'linear-gradient(90deg,#E6017E,#C0116E)' : '#E3D2DC' }};color:#fff;font-weight:700;font-size:14px;padding:12px 26px;border:none;border-radius:11px;box-shadow:0 5px 15px rgba(230,1,126,.2);">✉ {{ __('pc.send_report') }}</button>
             </form>
         </div>
     </div>

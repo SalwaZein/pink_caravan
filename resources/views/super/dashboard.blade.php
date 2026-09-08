@@ -9,8 +9,8 @@
             @php($fs = 'padding:8px 11px;border:1px solid #E3D2DC;border-radius:9px;font-size:13px;background:#fff;')
             <select name="emirate" style="{{ $fs }}"><option value="">{{ __('pc.emirate') }}: {{ __('pc.status') === 'Status' ? 'All' : 'الكل' }}</option>@foreach ($emirates as $v=>$l)<option value="{{ $v }}" @selected(($filters['emirate'] ?? '')===$v)>{{ $l }}</option>@endforeach</select>
             <select name="type" style="{{ $fs }}"><option value="">{{ __('pc.type_col') }}</option>@foreach ($types as $v=>$l)<option value="{{ $v }}" @selected(($filters['type'] ?? '')===$v)>{{ $l }}</option>@endforeach</select>
-            <input type="date" name="from" value="{{ $filters['from'] ?? '' }}" style="{{ $fs }}" />
-            <input type="date" name="to" value="{{ $filters['to'] ?? '' }}" style="{{ $fs }}" />
+            <x-date-field name="from" :value="$filters['from'] ?? ''" :min-year="now()->year - 5" :max-year="now()->year + 1" />
+            <x-date-field name="to" :value="$filters['to'] ?? ''" :min-year="now()->year - 5" :max-year="now()->year + 1" />
             <button type="submit" style="cursor:pointer;background:#E6017E;color:#fff;border:none;font-weight:600;font-size:13px;padding:9px 16px;border-radius:9px;">{{ __('pc.view') }}</button>
             <div style="margin-inline-start:auto;display:flex;gap:8px;align-items:center;">
                 <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#2E7D32;background:#E4F4EF;padding:7px 13px;border-radius:999px;"><span class="pc-pulse" style="width:7px;height:7px;border-radius:50%;background:#2E7D32;display:inline-block;"></span>{{ __('pc.live_update') }}</span>
