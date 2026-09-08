@@ -153,3 +153,8 @@ input, select, textarea, button { font-family: inherit; }
     box-shadow: 0 16px 36px rgba(230, 1, 126, .14);
     border-color: #F6BFD9;
 }
+
+/* Date field (day / month / year dropdowns + keypad entry) — stacks on phones. */
+@media (max-width: 460px) {
+    .pc-datefield > div[style*="grid-template-columns"] { grid-template-columns: 1fr 1fr !important; }
+}

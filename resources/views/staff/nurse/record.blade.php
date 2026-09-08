@@ -96,7 +96,7 @@
 
         @if ($readOnly)
             <div style="margin-bottom:16px;display:flex;align-items:center;gap:10px;background:#E4F4EF;border:1px solid #BFE6D5;color:#2E7D32;font-size:13px;font-weight:600;padding:12px 18px;border-radius:12px;">
-                <span>🔒</span><span>{{ __('pc.case_closed_readonly') }}</span>
+                <span>🔒</span><span>{{ $readOnlyNote ?? __('pc.case_closed_readonly') }}</span>
             </div>
         @endif
 
@@ -125,7 +125,7 @@
                 {{-- Emirates ID (auto-filled by the reader, or entered manually) --}}
                 <label style="{{ $lbl }}">{{ __('pc.emirates_id') }}<input name="emirates_id" value="{{ old('emirates_id', $patient->emirates_id) }}" placeholder="784-____-_______-_" style="{{ $inp }}" /></label>
                 <label style="{{ $lbl }}">{{ __('pc.full_name') }} *<input name="full_name" value="{{ old('full_name', $patient->full_name) }}" required style="{{ $inp }}" /></label>
-                <label style="{{ $lbl }}">{{ __('pc.dob') }}<input type="date" name="dob" value="{{ old('dob', optional($patient->dob)->toDateString()) }}" style="{{ $inp }}" /></label>
+                <label style="{{ $lbl }}">{{ __('pc.dob') }}<x-date-field name="dob" :value="old('dob', optional($patient->dob)->toDateString())" :min-year="1900" :max-year="now()->year" /></label>
                 <label style="{{ $lbl }}">{{ __('pc.nationality') }}<select name="nationality" style="{{ $inp }}background:#fff;"><option value="">—</option>@foreach (\App\Support\Nationalities::all() as $nat)<option value="{{ $nat }}" @selected(old('nationality', $patient->nationality) === $nat)>{{ $nat }}</option>@endforeach</select></label>
                 <label style="{{ $lbl }}">{{ __('pc.emirate') }}<select name="emirate" style="{{ $inp }}background:#fff;"><option value="">—</option>@foreach ($emirates as $em)<option value="{{ $em }}" @selected(old('emirate', $patient->emirate) === $em)>{{ __('pc.em_'.$em) }}</option>@endforeach</select></label>
                 <div style="{{ $lbl }}">{{ __('pc.marital') }}
@@ -142,7 +142,7 @@
                 <label style="{{ $lbl }}">{{ __('pc.mobile2') }}<input type="tel" name="mobile2" value="{{ old('mobile2', $patient->mobile2) }}" style="{{ $inp }}" /></label>
                 <label style="{{ $lbl }}">{{ __('pc.email') }}<input type="email" name="email" value="{{ old('email', $patient->email) }}" style="{{ $inp }}" /></label>
                 <label style="{{ $lbl }}">{{ __('pc.menarche') }}<input type="number" name="age_at_menarche" value="{{ old('age_at_menarche', $record->age_at_menarche) }}" style="{{ $inp }}" /></label>
-                <label style="{{ $lbl }}">{{ __('pc.lmp') }}<input type="date" name="lmp" value="{{ old('lmp', optional($record->lmp)->toDateString()) }}" style="{{ $inp }}" /></label>
+                <label style="{{ $lbl }}">{{ __('pc.lmp') }}<x-date-field name="lmp" :value="old('lmp', optional($record->lmp)->toDateString())" :min-year="now()->year - 5" :max-year="now()->year" /></label>
                 {{-- Breast implant Yes/No — replaces "Number of children", last field in this section --}}
                 <div style="{{ $lbl }}">{{ __('pc.breast_implant') }}
                     <div style="display:flex;gap:16px;margin-top:9px;">
@@ -217,7 +217,7 @@
             {!! $sectionHead(4, __('pc.prev_screening')) !!}
             <input type="hidden" name="cbe_result" :value="result" />
             <div class="pc-cols-2" style="gap:16px;align-items:end;">
-                <label style="{{ $lbl }}">{{ __('pc.last_mammo') }}<input type="date" name="last_mammogram" value="{{ old('last_mammogram', optional($record->last_mammogram)->toDateString()) }}" style="{{ $inp }}" /></label>
+                <label style="{{ $lbl }}">{{ __('pc.last_mammo') }}<x-date-field name="last_mammogram" :value="old('last_mammogram', optional($record->last_mammogram)->toDateString())" :min-year="1980" :max-year="now()->year" /></label>
                 <div style="{{ $lbl }}">{{ __('pc.last_mammo_report') }}
                     <div style="display:flex;gap:10px;margin-top:7px;">
                         <span @click="result='normal'" role="button" style="cursor:pointer;flex:1;text-align:center;padding:10px;border:2px solid #E3D2DC;border-radius:9px;font-size:13px;font-weight:700;background:#fff;color:#6B6472;" :style="result==='normal' ? { borderColor:'#2E7D32', background:'#E4F4EF', color:'#2E7D32' } : { borderColor:'#E3D2DC', background:'#fff', color:'#6B6472' }">{{ __('pc.normal') }}</span>
@@ -226,9 +226,9 @@
                 </div>
             </div>
             <div x-show="result==='abnormal'" x-cloak class="pc-stack-sm" style="margin-top:16px;padding:16px;background:#FBE4E4;border:1px solid #F3C4C4;border-radius:12px;display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-                <label style="font-size:12.5px;font-weight:600;color:#9A2E2E;">{{ __('pc.refer_mammo') }}<input type="date" name="refer_mammo_date" value="{{ old('refer_mammo_date', optional($rMammo?->referral_date)->toDateString()) }}" style="{{ $inp }}border-color:#E7B7B7;" /></label>
+                <label style="font-size:12.5px;font-weight:600;color:#9A2E2E;">{{ __('pc.refer_mammo') }}<x-date-field name="refer_mammo_date" :value="old('refer_mammo_date', optional($rMammo?->referral_date)->toDateString())" :min-year="now()->year - 1" :max-year="now()->year + 2" /></label>
                 <label style="font-size:12.5px;font-weight:600;color:#9A2E2E;">{{ __('pc.hospital') }}<input name="refer_mammo_hospital" value="{{ old('refer_mammo_hospital', $rMammo?->hospital) }}" style="{{ $inp }}border-color:#E7B7B7;" /></label>
-                <label style="font-size:12.5px;font-weight:600;color:#9A2E2E;">{{ __('pc.refer_uls') }}<input type="date" name="refer_uls_date" value="{{ old('refer_uls_date', optional($rUls?->referral_date)->toDateString()) }}" style="{{ $inp }}border-color:#E7B7B7;" /></label>
+                <label style="font-size:12.5px;font-weight:600;color:#9A2E2E;">{{ __('pc.refer_uls') }}<x-date-field name="refer_uls_date" :value="old('refer_uls_date', optional($rUls?->referral_date)->toDateString())" :min-year="now()->year - 1" :max-year="now()->year + 2" /></label>
                 <label style="font-size:12.5px;font-weight:600;color:#9A2E2E;">{{ __('pc.hospital') }}<input name="refer_uls_hospital" value="{{ old('refer_uls_hospital', $rUls?->hospital) }}" style="{{ $inp }}border-color:#E7B7B7;" /></label>
             </div>
         </div>
@@ -257,7 +257,7 @@
                     <canvas x-ref="sig" x-init="initSig($refs.sig)" style="width:100%;height:150px;border:1.5px dashed #D8C4CF;border-radius:12px;background:#fff;touch-action:none;cursor:crosshair;"></canvas>
                     <p style="font-size:11px;color:#9A8F97;margin:6px 0 0;">{{ __('pc.sign_hint') }}</p>
                 </div>
-                <label style="{{ $lbl }}">{{ __('pc.sign_date') }}<input type="date" name="signed_at" value="{{ old('signed_at', optional($record->signed_at)->toDateString() ?? now()->toDateString()) }}" style="{{ $inp }}" /></label>
+                <label style="{{ $lbl }}">{{ __('pc.sign_date') }}<x-date-field name="signed_at" :value="old('signed_at', optional($record->signed_at)->toDateString() ?? now()->toDateString())" :min-year="now()->year - 2" :max-year="now()->year" /></label>
             </div>
         </div>
 

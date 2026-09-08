@@ -30,6 +30,13 @@
                 ['key' => 'mammographer/queue', 'icon' => '🩻', 'label' => __('pc.nav_mammo_reports')],
             ],
         ],
+        'volunteer' => [
+            'label' => __('pc.role_volunteer_label'), 'user' => 'Aisha Rahman', 'init' => 'AR',
+            'tint' => '#5B8C51', 'clinic' => __('pc.clinic_nurse'),
+            'items' => [
+                ['key' => 'queue', 'icon' => '🎟️', 'label' => __('pc.nav_queue_desk')],
+            ],
+        ],
         'clinic' => [
             'label' => __('pc.role_clinic_label'), 'user' => 'Mariam Saeed', 'init' => 'MS',
             'tint' => '#F7941E', 'clinic' => __('pc.clinic_clinic'),
@@ -64,6 +71,10 @@
             'clinic/queue'        => $cids ? $R()->whereIn('clinic_id', $cids)->count() : 0,
             'clinic/assign'       => $cids ? $R()->whereIn('clinic_id', $cids)->whereIn('status', ['submitted', 'returned'])->count() : 0,
             'mammographer/queue'  => $R()->where('assigned_role', 'mammographer')->where('mammographer_id', $authUser->id)->whereIn('status', ['assigned', 'in_review'])->count(),
+            // Visitors still in today's walk-in queue at this user's clinic(s).
+            'queue'               => \App\Models\QueueToken::query()
+                                        ->when($cids, fn ($q) => $q->whereIn('clinic_id', $cids))
+                                        ->whereDate('queue_date', today())->open()->count(),
             default               => 0,
         };
         return $n > 0 ? (string) $n : null;
@@ -72,6 +83,8 @@
     // Administration links shown per permission — not tied to a single role.
     $adminItems = [];
     if ($authUser) {
+        // The volunteer already has the queue desk as their own (only) nav item.
+        if ($authUser->can('manage_queue') && $role !== 'volunteer') $adminItems[] = ['key' => 'queue', 'icon' => '🎟️', 'label' => __('pc.nav_queue_desk')];
         if ($authUser->can('view_dashboards')) $adminItems[] = ['key' => 'super/dashboard', 'icon' => '📊', 'label' => __('pc.nav_dashboard')];
         if ($authUser->can('manage_clinics'))  $adminItems[] = ['key' => 'super/clinics',   'icon' => '🏥', 'label' => __('pc.nav_clinics')];
         if ($authUser->can('review_bookings')) $adminItems[] = ['key' => 'super/bookings',   'icon' => '📅', 'label' => __('pc.nav_bookings')];
@@ -129,6 +142,10 @@
                        style="cursor:pointer;display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:11px;margin-bottom:3px;font-size:14px;font-weight:500;text-decoration:none;color:{{ $active ? '#fff' : '#E9CBD9' }};background:{{ $active ? 'linear-gradient(90deg,#E6017E,#C0116E)' : 'transparent' }};">
                         <span style="font-size:17px;width:20px;text-align:center;">{{ $n['icon'] }}</span>
                         <span>{{ $n['label'] }}</span>
+                        @php($badge = $badgeFor($n['key']))
+                        @if ($badge)
+                            <span style="{{ $marginStart }}background:#E6017E;color:#fff;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;">{{ $badge }}</span>
+                        @endif
                     </a>
                 @endforeach
             @endif

@@ -27,6 +27,8 @@ class UsersSeeder extends Seeder
             ['name' => 'Sara Al Nuaimi',   'email' => 's.nuaimi@focp.ae', 'role' => 'nurse',        'clinics' => ['DXB-MOB-01']],
             ['name' => 'Hind Al Ali',      'email' => 'h.alali@focp.ae',  'role' => 'nurse',        'clinics' => ['SHJ-FIX-01']],
             ['name' => 'Noura Khalid',     'email' => 'n.khalid@focp.ae', 'role' => 'mammographer', 'clinics' => ['DXB-MOB-01']],
+            // Runs the WhatsApp token desk at the Dubai clinic door.
+            ['name' => 'Aisha Rahman',     'email' => 'a.rahman@focp.ae', 'role' => 'volunteer',    'clinics' => ['DXB-MOB-01']],
         ];
 
         foreach ($staff as $data) {

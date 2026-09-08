@@ -30,8 +30,8 @@
                 <option value="">{{ __('pc.emirate') }}</option>
                 @foreach ($emirates as $v=>$l)<option value="{{ $v }}" @selected(($filters['emirate'] ?? '')===$v)>{{ $l }}</option>@endforeach
             </select>
-            <input type="date" name="from" value="{{ $filters['from'] ?? '' }}" style="{{ $fs }}" />
-            <input type="date" name="to" value="{{ $filters['to'] ?? '' }}" style="{{ $fs }}" />
+            <x-date-field name="from" :value="$filters['from'] ?? ''" :min-year="now()->year - 5" :max-year="now()->year + 1" />
+            <x-date-field name="to" :value="$filters['to'] ?? ''" :min-year="now()->year - 5" :max-year="now()->year + 1" />
             <button type="submit" style="cursor:pointer;background:#E6017E;color:#fff;border:none;font-weight:600;font-size:13px;padding:9px 16px;border-radius:9px;">{{ __('pc.view') }}</button>
         </form>
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MammogramFinding;
 use App\Models\PatientHistoryRecord;
 use App\Support\Audit;
 use App\Support\PatientNotifier;
@@ -13,53 +14,174 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\View\View;
 
 /**
- * Mammographer — post-campaign report handling.
- * Enters the manual PC number, uploads the mammogram report and sends it to the
- * patient. Scoped to the mammographer's assigned clinics.
+ * Mammographer workspace — the patient's file from the mammography side.
+ *
+ * Business feedback #4–#6:
+ *   #4 the mammographer opens the patient's file and reviews the initial
+ *      registration form (Form 3) before assessing;
+ *   #5 records the mammography findings on a dedicated form in that file;
+ *   #6 the formal report may only be ready days later, so a case she has
+ *      handled stays open to her — visible in a second "awaiting report" list —
+ *      until the report is uploaded and sent, whatever the admin has done with
+ *      the case in the meantime.
  */
 class MammographerController extends Controller
 {
-    /** Cases the clinic admin has assigned to this mammographer. */
+    /** Cases assigned to this mammographer, plus the ones still awaiting a report. */
     public function queue(): View
     {
-        $records = $this->scopedQuery()
+        $mine = $this->scopedQuery()->where('mammographer_id', auth()->id());
+
+        $assigned = (clone $mine)
             ->with('patient', 'doctor', 'examination')
             ->where('assigned_role', PatientHistoryRecord::ROLE_MAMMOGRAPHER)
-            ->where('mammographer_id', auth()->id())
             ->whereIn('status', [PatientHistoryRecord::ASSIGNED, PatientHistoryRecord::IN_REVIEW])
+            ->latest()->get();
+
+        // #6 — handled but the report has not gone out yet. These stay reachable
+        // however the case has moved on (returned to the admin, or even closed).
+        $pending = (clone $mine)
+            ->with('patient', 'doctor', 'examination')
+            ->whereNull('report_sent_at')
+            ->whereNotIn('id', $assigned->pluck('id'))
             ->latest()->get();
 
         return view('staff.mammographer.queue', [
             'sidebarRole' => auth()->user()->sidebarRole(),
             'route'       => 'mammographer/queue',
-            'rows'        => RecordPresenter::rows($records, 'mammographer.record'),
+            'rows'        => RecordPresenter::rows($assigned, 'mammographer.record'),
+            'pendingRows' => RecordPresenter::rows($pending, 'mammographer.record'),
         ]);
     }
 
-    /** Open the manage-report page for a case the admin assigned to this mammographer. */
+    /** Open the patient's file (report handling + links to the history and findings). */
     public function edit(PatientHistoryRecord $record): View
     {
         $this->authorizeAssigned($record);
 
-        // Opening an assigned case marks it as being worked on.
+        // Opening a freshly assigned case marks it as being worked on.
         if ($record->status === PatientHistoryRecord::ASSIGNED) {
             $record->update(['status' => PatientHistoryRecord::IN_REVIEW]);
         }
 
-        $record->load('patient', 'clinic', 'doctor', 'nurse', 'examination');
+        $record->load('patient', 'clinic', 'doctor', 'nurse', 'examination', 'mammogramFinding');
 
         return view('staff.mammographer.manage', [
             'sidebarRole' => auth()->user()->sidebarRole(),
             'route'       => 'mammographer/queue',
             'record'      => $record,
             'patient'     => $record->patient,
+            'finding'     => $record->mammogramFinding,
+            'canEdit'     => $this->canStillWork($record),
         ]);
+    }
+
+    /**
+     * #4 — the initial patient form (Form 3) as submitted at registration,
+     * rendered read-only inside the mammographer's copy of the file.
+     */
+    public function history(PatientHistoryRecord $record): View
+    {
+        $this->authorizeAssigned($record);
+
+        $record->load('patient', 'referrals');
+
+        return view('staff.nurse.record', [
+            'record'       => $record,
+            'patient'      => $record->patient,
+            'sidebarRole'  => auth()->user()->sidebarRole(),
+            'route'        => 'mammographer/queue',
+            'formAction'   => route('mammographer.record', $record),
+            'backUrl'      => route('mammographer.record', $record),
+            'readOnly'     => true,
+            'readOnlyNote' => __('pc.patient_file_readonly'),
+            'canAssign'    => false,
+            'assignees'    => ['nurse' => collect(), 'doctor' => collect(), 'mammographer' => collect()],
+        ]);
+    }
+
+    /** #5 — the mammography findings form for this case. */
+    public function findings(PatientHistoryRecord $record): View
+    {
+        $this->authorizeAssigned($record);
+
+        $record->load('patient', 'clinic', 'mammogramFinding');
+
+        return view('staff.mammographer.findings', [
+            'sidebarRole' => auth()->user()->sidebarRole(),
+            'route'       => 'mammographer/queue',
+            'record'      => $record,
+            'patient'     => $record->patient,
+            'finding'     => $record->mammogramFinding ?? new MammogramFinding(['status' => MammogramFinding::DRAFT]),
+            'readOnly'    => ! $this->canStillWork($record),
+        ]);
+    }
+
+    /** Save the findings as a draft, or submit them into the patient's file. */
+    public function saveFindings(Request $request, PatientHistoryRecord $record): RedirectResponse
+    {
+        $this->authorizeAssigned($record);
+
+        if (! $this->canStillWork($record)) {
+            return redirect()->route('mammographer.record', $record)->with('status', __('pc.findings_locked'));
+        }
+
+        $isSubmit = $request->input('action') === 'submit';
+
+        $rules = [
+            'exam_date'      => ['nullable', 'date'],
+            'modality'       => ['nullable', 'in:'.implode(',', MammogramFinding::MODALITIES)],
+            'breast_density' => ['nullable', 'in:'.implode(',', MammogramFinding::DENSITIES)],
+            'birads_right'   => ['nullable', 'in:'.implode(',', MammogramFinding::BIRADS)],
+            'birads_left'    => ['nullable', 'in:'.implode(',', MammogramFinding::BIRADS)],
+            'findings_right' => ['nullable', 'string', 'max:4000'],
+            'findings_left'  => ['nullable', 'string', 'max:4000'],
+            'comparison'     => ['nullable', 'string', 'max:2000'],
+            'impression'     => ['nullable', 'string', 'max:4000'],
+            'recommendation' => ['nullable', 'in:'.implode(',', MammogramFinding::RECOMMENDATIONS)],
+            'notes'          => ['nullable', 'string', 'max:2000'],
+        ];
+
+        // Submitting is what makes the findings part of the record, so the
+        // clinically meaningful fields become mandatory at that point only.
+        if ($isSubmit) {
+            $rules['exam_date']      = ['required', 'date'];
+            $rules['modality']       = ['required', 'in:'.implode(',', MammogramFinding::MODALITIES)];
+            $rules['birads_right']   = ['required', 'in:'.implode(',', MammogramFinding::BIRADS)];
+            $rules['birads_left']    = ['required', 'in:'.implode(',', MammogramFinding::BIRADS)];
+            $rules['impression']     = ['required', 'string', 'max:4000'];
+            $rules['recommendation'] = ['required', 'in:'.implode(',', MammogramFinding::RECOMMENDATIONS)];
+        }
+
+        $data = $request->validate($rules);
+
+        $finding = $record->mammogramFinding ?? new MammogramFinding(['record_id' => $record->id]);
+        $finding->fill($data);
+        $finding->record_id       = $record->id;
+        $finding->mammographer_id = $finding->mammographer_id ?? auth()->id();
+        $finding->status          = $isSubmit ? MammogramFinding::SUBMITTED : MammogramFinding::DRAFT;
+        $finding->submitted_at    = $isSubmit ? ($finding->submitted_at ?? now()) : null;
+        $finding->save();
+
+        // Whoever files the findings owns the case on the mammography side.
+        if (! $record->mammographer_id) {
+            $record->update(['mammographer_id' => auth()->id()]);
+        }
+
+        Audit::log($isSubmit ? 'mammogram.findings_submitted' : 'mammogram.findings_drafted', $record, $record->ref_no);
+
+        return redirect()->route($isSubmit ? 'mammographer.record' : 'mammographer.findings', $record)
+            ->with('status', $isSubmit ? __('pc.findings_submitted_ok') : __('pc.findings_saved_ok'));
     }
 
     /** Save patient/PC details and, optionally, upload the mammogram report file. */
     public function update(Request $request, PatientHistoryRecord $record): RedirectResponse
     {
         $this->authorizeAssigned($record);
+
+        if (! $this->canStillWork($record)) {
+            return redirect()->route('mammographer.record', $record)->with('status', __('pc.report_already_sent'));
+        }
 
         $data = $request->validate([
             'manual_pc_number' => ['nullable', 'string', 'max:60'],
@@ -101,7 +223,7 @@ class MammographerController extends Controller
         );
     }
 
-    /** Send the uploaded mammogram report to the patient (delivery stubbed like OTP/SMS). */
+    /** Send the uploaded mammogram report to the patient. */
     public function send(PatientHistoryRecord $record): RedirectResponse
     {
         $this->authorizeAssigned($record);
@@ -110,11 +232,16 @@ class MammographerController extends Controller
             return back()->with('status', __('pc.report_needed_first'));
         }
 
-        // Report sent → the case returns to the clinic admin to be closed or routed on.
-        $record->update([
-            'report_sent_at' => now(),
-            'status'         => PatientHistoryRecord::RETURNED,
-        ]);
+        $record->report_sent_at = now();
+
+        // An open case returns to the clinic admin to be closed or routed on.
+        // A case the admin already closed (#6: the report arrived days later)
+        // stays closed — sending the report must not reopen it.
+        if (! $record->isClosed()) {
+            $record->status = PatientHistoryRecord::RETURNED;
+        }
+
+        $record->save();
 
         // Notify the patient across email + SMS + WhatsApp with a secure portal link.
         $channels = PatientNotifier::reportReady($record);
@@ -143,7 +270,16 @@ class MammographerController extends Controller
 
     // ---- helpers ----
 
-    /** Human-readable per-channel notification summary, e.g. "Email: sent, SMS: logged, WhatsApp: logged". */
+    /**
+     * #6 — the file stays writable until the report has actually been sent,
+     * even after the clinic admin has closed the case. Once sent, it is history.
+     */
+    private function canStillWork(PatientHistoryRecord $record): bool
+    {
+        return $record->report_sent_at === null;
+    }
+
+    /** Human-readable per-channel notification summary, e.g. "Email: sent, SMS: logged". */
     private static function channelSummary(array $channels): string
     {
         $labels = ['email' => 'Email', 'sms' => 'SMS', 'whatsapp' => 'WhatsApp'];
@@ -167,7 +303,9 @@ class MammographerController extends Controller
     }
 
     /**
-     * The case must be in this user's clinic AND assigned to them as the mammographer.
+     * The case must be in this user's clinic AND belong to them on the
+     * mammography side — either currently routed to them, or previously handled
+     * by them (which is what keeps a case open for a late report, #6).
      * A clinic-less super admin (permission only, no clinic) keeps full access.
      */
     private function authorizeAssigned(PatientHistoryRecord $record): void
@@ -178,10 +316,9 @@ class MammographerController extends Controller
             return;
         }
 
-        abort_unless(
-            $record->assigned_role === PatientHistoryRecord::ROLE_MAMMOGRAPHER
-                && $record->mammographer_id === auth()->id(),
-            403,
-        );
+        $routedToMe = $record->assigned_role === PatientHistoryRecord::ROLE_MAMMOGRAPHER
+            && $record->mammographer_id === auth()->id();
+
+        abort_unless($routedToMe || $record->mammographer_id === auth()->id(), 403);
     }
 }

@@ -117,7 +117,7 @@
                 <label style="{{ $lbl }}">{{ __('pc.mobile') }} *<input type="tel" name="mobile" value="{{ old('mobile') }}" required style="{{ $inp }}" /></label>
                 <label style="{{ $lbl }}">{{ __('pc.emirate') }}<select name="emirate" style="{{ $inp }}background:#fff;"><option value="">—</option>@foreach (['abu_dhabi','dubai','sharjah','ajman','umm_al_quwain','ras_al_khaimah','fujairah'] as $em)<option value="{{ $em }}">{{ __('pc.em_'.$em) }}</option>@endforeach</select></label>
                 <label style="{{ $lbl }}">{{ __('pc.est_count') }}<input type="number" name="estimated_participants" value="{{ old('estimated_participants') }}" style="{{ $inp }}" /></label>
-                <label style="{{ $lbl }}">{{ __('pc.pref_date') }}<input type="date" name="event_date" value="{{ old('event_date') }}" style="{{ $inp }}" /></label>
+                <label style="{{ $lbl }}">{{ __('pc.pref_date') }}<x-date-field name="event_date" :value="old('event_date')" :min-year="now()->year" :max-year="now()->year + 2" /></label>
                 <label style="{{ $lbl }}">{{ __('pc.venue') }}<input type="text" name="venue" value="{{ old('venue') }}" style="{{ $inp }}" /></label>
                 <label style="grid-column:1 / -1;{{ $lbl }}">{{ __('pc.notes') }}<textarea name="notes" rows="3" style="{{ $inp }}resize:vertical;">{{ old('notes') }}</textarea></label>
             </div>

@@ -90,6 +90,12 @@ class PatientHistoryRecord extends Model
         return $this->hasMany(Referral::class, 'record_id');
     }
 
+    /** The mammographer's findings for this case (business feedback #5). */
+    public function mammogramFinding(): HasOne
+    {
+        return $this->hasOne(MammogramFinding::class, 'record_id');
+    }
+
     public function report(): HasOne
     {
         return $this->hasOne(Report::class, 'record_id');
