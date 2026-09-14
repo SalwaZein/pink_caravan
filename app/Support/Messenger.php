@@ -6,22 +6,18 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
 /**
- * One place that talks to the SMS / WhatsApp gateways.
+ * The SMS gateway, plus phone-number normalisation shared by every channel.
  *
- * When a channel's `url` is configured (services.sms / services.whatsapp) the
- * message is POSTed to it with a bearer token if provided; otherwise it is
- * logged — the same stub pattern the OTP flow uses — so every flow works end to
- * end without a provider and needs only credentials to go live.
+ * When services.sms `url` is configured the message is POSTed to it with a
+ * bearer token if provided; otherwise it is logged (stub), so every flow works
+ * end to end without a provider and needs only credentials to go live.
+ *
+ * WhatsApp has its own template-based driver: App\Support\WhatsApp.
  *
  * Returns 'sent' | 'logged' | 'skipped' | 'failed'.
  */
 class Messenger
 {
-    public static function whatsapp(?string $to, string $body): string
-    {
-        return self::send('whatsapp', $to, $body);
-    }
-
     public static function sms(?string $to, string $body): string
     {
         return self::send('sms', $to, $body);

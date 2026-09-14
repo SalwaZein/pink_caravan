@@ -37,3 +37,25 @@ services:
       # Notifications stay stubbed (logged) for the demo until real gateways are set.
       - key: MAIL_MAILER
         value: log
+      # WhatsApp Business API — FOCP number via Outreachable (Meta Cloud API v19.0).
+      # The endpoint is not secret. The TOKEN is: set it in the Render dashboard
+      # (Environment), never in this file. Until it is set, WhatsApp stays stubbed.
+      - key: WHATSAPP_API_URL
+        value: "https://crmapi.outreachable.online/api/meta/v19.0/1340290365829987/messages"
+      - key: WHATSAPP_TEMPLATE_LANGUAGE
+        value: en
+      - key: WHATSAPP_API_TOKEN
+        sync: false
+      # Approved template name per message (set in the dashboard once each is approved).
+      - key: WHATSAPP_TPL_QUEUE_ISSUED
+        sync: false
+      - key: WHATSAPP_TPL_QUEUE_APPROACHING
+        sync: false
+      - key: WHATSAPP_TPL_QUEUE_CALLED
+        sync: false
+      - key: WHATSAPP_TPL_REPORT_READY
+        sync: false
+      - key: WHATSAPP_TPL_RADIOLOGY_REPORT
+        sync: false
+      - key: WHATSAPP_TPL_PATIENT_OTP
+        sync: false
