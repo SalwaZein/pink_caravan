@@ -51,6 +51,7 @@ class User extends Authenticatable
             'clinic_admin' => 'clinic',
             'doctor'       => 'doctor',
             'mammographer' => 'mammographer',
+            'radiologist'  => 'radiologist',
             'volunteer'    => 'volunteer',
             default        => 'nurse',
         };
@@ -64,6 +65,7 @@ class User extends Authenticatable
             'clinic_admin' => 'clinic.queue',
             'doctor'       => 'doctor.assigned',
             'mammographer' => 'mammographer.queue',
+            'radiologist'  => 'radiologist.reports',
             'volunteer'    => 'queue.index',
             default        => 'nurse.queue',
         };

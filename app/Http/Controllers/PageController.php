@@ -157,6 +157,8 @@ class PageController extends Controller
 
         $reportStats = [
             ['label' => __('pc.total_records'), 'val' => number_format($s['total']),     'color' => '#E6017E', 'sub' => ''],
+            ['label' => __('pc.mammograms_done'),     'val' => number_format($s['mammograms']),    'color' => '#0E9F8E', 'sub' => __('pc.mammograms_sub')],
+            ['label' => __('pc.clinical_exams_done'), 'val' => number_format($s['clinicalExams']), 'color' => '#2A6FDB', 'sub' => __('pc.clinical_exams_sub')],
             ['label' => __('pc.abnormal_rate'), 'val' => $s['abnormalRate'].'%',          'color' => '#C62828', 'sub' => $s['abnormal'].' '.mb_strtolower(__('pc.abnormal'))],
             ['label' => __('pc.referrals'),     'val' => number_format($s['referrals']),  'color' => '#2A6FDB', 'sub' => $s['referralsClosed'].' '.mb_strtolower(__('pc.completed'))],
             ['label' => __('pc.screened_women'),'val' => number_format($s['completed']),  'color' => '#16A6A6', 'sub' => ''],
@@ -188,6 +190,9 @@ class PageController extends Controller
         $dashStats = [
             ['icon' => '📋', 'tint' => '#FCE7F0', 'color' => '#E6017E', 'val' => number_format($s['total']),      'label' => __('pc.total_records'),  'sub' => '', 'subColor' => '#9A8F97'],
             ['icon' => '💗', 'tint' => '#E4F4EF', 'color' => '#16A6A6', 'val' => number_format($s['completed']),  'label' => __('pc.screened_women'), 'sub' => '', 'subColor' => '#2E7D32'],
+            // Procedures actually performed — one per submitted report.
+            ['icon' => '📷', 'tint' => '#DBF1EE', 'color' => '#0E9F8E', 'val' => number_format($s['mammograms']), 'label' => __('pc.mammograms_done'), 'sub' => __('pc.mammograms_sub'), 'subColor' => '#9A8F97'],
+            ['icon' => '🩺', 'tint' => '#E3ECFB', 'color' => '#2A6FDB', 'val' => number_format($s['clinicalExams']), 'label' => __('pc.clinical_exams_done'), 'sub' => __('pc.clinical_exams_sub'), 'subColor' => '#9A8F97'],
             ['icon' => '⚠️', 'tint' => '#FBE4E4', 'color' => '#C62828', 'val' => $s['abnormalRate'].'%',          'label' => __('pc.abnormal_rate'),  'sub' => $s['abnormal'].' '.mb_strtolower(__('pc.abnormal')), 'subColor' => '#9A8F97'],
             ['icon' => '🔀', 'tint' => '#E3ECFB', 'color' => '#2A6FDB', 'val' => number_format($s['referrals']),  'label' => __('pc.referrals'),      'sub' => $s['referralsClosed'].' '.mb_strtolower(__('pc.completed')), 'subColor' => '#9A8F97'],
             ['icon' => '⏳', 'tint' => '#EEE6FA', 'color' => '#7E4CC4', 'val' => number_format($s['pending']),    'label' => __('pc.pending_cases'),  'sub' => __('pc.in_follow_up'), 'subColor' => '#9A8F97'],

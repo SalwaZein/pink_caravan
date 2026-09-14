@@ -11,7 +11,7 @@
 @section('content')
 <x-staff-shell :role="$sidebarRole" :route="$route">
     <div class="pc-anim" style="max-width:860px;margin:0 auto;padding-bottom:30px;">
-        <a href="{{ route('mammographer.queue') }}" style="display:inline-block;margin-bottom:16px;font-size:13.5px;font-weight:600;color:#6B6472;text-decoration:none;">← {{ __('pc.nav_mammo_reports') }}</a>
+        <a href="{{ route('mammographer.queue') }}" style="display:inline-block;margin-bottom:16px;font-size:13.5px;font-weight:600;color:#6B6472;text-decoration:none;">← {{ __('pc.nav_mammo_screening') }}</a>
 
         @if (session('status'))
             <div style="margin-bottom:14px;background:#E4F4EF;border:1px solid #BFE6DA;border-radius:12px;padding:13px 18px;color:#1E6F5C;font-size:13.5px;">{{ session('status') }}</div>
@@ -63,13 +63,13 @@
                 @can('record_mammogram_findings')
                     <a href="{{ route('mammographer.findings', $record) }}"
                        style="display:block;text-decoration:none;color:inherit;border:1px solid #E3D2DC;border-radius:12px;padding:16px 18px;background:#FDF8FA;">
-                        <div style="font-size:20px;margin-bottom:6px;">🩺</div>
+                        <div style="font-size:20px;margin-bottom:6px;">📷</div>
                         <div style="font-size:14px;font-weight:700;">{{ __('pc.findings_title') }}</div>
                         <div style="font-size:12px;color:#9A8F97;margin-top:3px;line-height:1.45;">
                             @if ($finding?->isSubmitted())
                                 {{ __('pc.findings_submitted') }} · {{ optional($finding->submitted_at)->format('d M Y, H:i') }}
-                                @if ($finding->highestBirads() !== null)
-                                    · {{ __('pc.birads_'.$finding->highestBirads()) }}
+                                @if ($record->radiologist)
+                                    · {{ __('pc.role_radiologist') }}: {{ $record->radiologist->name }}
                                 @endif
                             @elseif ($finding)
                                 {{ __('pc.findings_draft_saved') }}

@@ -10,6 +10,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *
  * Kept apart from the uploaded mammogram report PDF: the findings are recorded
  * at the visit, while the formal report may only be ready days later (#6).
+ *
+ * Round 3 trimmed the form down to a single free-text `findings` box; the
+ * structured columns (modality, density, BI-RADS, impression…) stay on the table
+ * so records filed with the earlier form still read back correctly.
  */
 class MammogramFinding extends Model
 {
@@ -27,7 +31,11 @@ class MammogramFinding extends Model
     public const RECOMMENDATIONS = ['routine', 'short_interval', 'additional_imaging', 'biopsy', 'referral'];
 
     protected $fillable = [
-        'record_id', 'mammographer_id', 'exam_date', 'modality', 'breast_density',
+        // `findings` is the one free-text box the mammographer fills in (business
+        // feedback round 3). The columns below it are kept for records filed with
+        // the earlier, longer form.
+        'record_id', 'mammographer_id', 'findings',
+        'exam_date', 'modality', 'breast_density',
         'birads_right', 'birads_left', 'findings_right', 'findings_left',
         'comparison', 'impression', 'recommendation', 'notes',
         'status', 'submitted_at',

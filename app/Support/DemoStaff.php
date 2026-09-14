@@ -21,8 +21,8 @@ class DemoStaff
      * @var list<array{name:string, email:string, role:string, clinics:list<string>}>
      *
      * Dubai (DXB-MOB-01) is deliberately staffed end to end — admin, nurse,
-     * doctor, mammographer and volunteer — so the whole handoff demos inside
-     * one clinic.
+     * doctor, mammographer, radiologist and volunteer — so the whole handoff
+     * demos inside one clinic.
      */
     public const ACCOUNTS = [
         ['name' => 'Anish Mathew',     'email' => 'anish@focp.ae',    'role' => 'super_admin',  'clinics' => []],
@@ -32,6 +32,7 @@ class DemoStaff
         ['name' => 'Dr. Layla Hassan', 'email' => 'l.hassan@focp.ae', 'role' => 'doctor',       'clinics' => ['SHJ-FIX-01', 'DXB-MOB-01']],
         ['name' => 'Dr. Omar Farid',   'email' => 'o.farid@focp.ae',  'role' => 'doctor',       'clinics' => ['AUH-MOB-01']],
         ['name' => 'Noura Khalid',     'email' => 'n.khalid@focp.ae', 'role' => 'mammographer', 'clinics' => ['DXB-MOB-01']],
+        ['name' => 'Dr. Huda Al Marri','email' => 'h.marri@focp.ae',  'role' => 'radiologist',  'clinics' => ['DXB-MOB-01']],
         ['name' => 'Aisha Rahman',     'email' => 'a.rahman@focp.ae', 'role' => 'volunteer',    'clinics' => ['DXB-MOB-01']],
     ];
 

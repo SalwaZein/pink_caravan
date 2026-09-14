@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Mail\RadiologyReportMail;
 use App\Mail\ReportReadyMail;
 use App\Models\PatientHistoryRecord;
 use Illuminate\Support\Facades\Log;
@@ -38,6 +39,26 @@ class PatientNotifier
         ];
     }
 
+    /**
+     * Send the radiologist's final PDF report to the patient: the document itself
+     * by email (attached), plus an SMS/WhatsApp notice pointing at the portal.
+     *
+     * @return array{email:string, sms:string, whatsapp:string}
+     */
+    public static function radiologyReport(PatientHistoryRecord $record): array
+    {
+        $record->loadMissing('patient');
+        $patient = $record->patient;
+        $link = self::portalLink();
+        $body = self::radiologyMessageText($record->ref_no, $link);
+
+        return [
+            'email'    => self::send($patient?->email, $record, fn () => new RadiologyReportMail($record, $link), 'radiology-report'),
+            'sms'      => self::gateway('sms', $patient?->mobile1, $body),
+            'whatsapp' => self::gateway('whatsapp', $patient?->mobile1, $body),
+        ];
+    }
+
     /** Absolute link to the patient OTP portal (they still verify with a one-time code). */
     private static function portalLink(): string
     {
@@ -51,18 +72,36 @@ class PatientNotifier
             ."القافلة الوردية: تقرير الفحص السريري {$ref} جاهز. افتحيه عبر رمز تحقق: {$link}";
     }
 
+    private static function radiologyMessageText(string $ref, string $link): string
+    {
+        return "Pink Caravan: your mammography report {$ref} has been sent to your email as a PDF. "
+            ."You can also open it here: {$link} — "
+            ."القافلة الوردية: تم إرسال تقرير التصوير الشعاعي {$ref} إلى بريدك الإلكتروني بصيغة PDF. ويمكنك فتحه هنا: {$link}";
+    }
+
     private static function email(?string $to, PatientHistoryRecord $record, string $link): string
+    {
+        return self::send($to, $record, fn () => new ReportReadyMail($record, $link), 'report-ready');
+    }
+
+    /**
+     * Deliver one mailable, reporting 'sent' | 'skipped' (no address) | 'failed'.
+     * The mailable is built lazily so a missing address costs nothing.
+     *
+     * @param  callable():\Illuminate\Mail\Mailable  $mailable
+     */
+    private static function send(?string $to, PatientHistoryRecord $record, callable $mailable, string $label): string
     {
         if (! $to) {
             return 'skipped';
         }
 
         try {
-            Mail::to($to)->send(new ReportReadyMail($record, $link));
+            Mail::to($to)->send($mailable());
 
             return 'sent';
         } catch (\Throwable $e) {
-            Log::warning("[report-ready email] failed for {$record->ref_no}: ".$e->getMessage());
+            Log::warning("[{$label} email] failed for {$record->ref_no}: ".$e->getMessage());
 
             return 'failed';
         }

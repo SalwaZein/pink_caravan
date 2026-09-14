@@ -36,8 +36,10 @@ class BusinessFeedbackTest extends TestCase
     {
         $this->actingAs($this->user('s.nuaimi@focp.ae'))->get('/nurse/record')->assertOk();
         $this->actingAs($this->user('n.khalid@focp.ae'))->get('/mammographer/queue')->assertOk();
+        $this->actingAs($this->user('h.marri@focp.ae'))->get('/radiologist/reports')
+            ->assertOk()->assertSee('Patient Report');
         $this->actingAs($this->user('anish@focp.ae'))->get('/super/users/create')
-            ->assertOk()->assertSee('Mammographer');
+            ->assertOk()->assertSee('Mammographer')->assertSee('Radiologist');
     }
 
     public function test_emirates_id_reader_mock_returns_card_data(): void
@@ -59,21 +61,17 @@ class BusinessFeedbackTest extends TestCase
 
         // 1. Nurse submits the registration with all the new fields.
         // The PC number is no longer captured by the nurse — the mammographer enters it later (step 4).
-        $this->actingAs($nurse)->post('/nurse/record', [
-            'action'           => 'submit',
-            'emirates_id'      => '784-1990-1234567-1',
-            'full_name'        => 'Test Patient',
-            'email'            => 'patient@example.com',
-            'mobile1'          => '+971500000000',
-            'breast_implant'   => 'no',
-            'cbe_result'       => 'normal',
-            'personal'         => ['biopsy' => 'yes'],
-            'personal_notes'   => ['biopsy' => 'left side 2019'],
-            'family'           => ['deg1' => ['relationship' => 'Parent', 'age' => '45']],
-            'consent'          => '1',
-            'patient_signature'=> 'data:image/png;base64,iVBORw0KGgo=',
-            'signed_at'        => now()->toDateString(),
-        ])->assertRedirect(route('nurse.queue'));
+        $this->actingAs($nurse)->post('/nurse/record', $this->registrationPayload([
+            'personal'       => ['biopsy' => 'yes'] + array_fill_keys(
+                ['lumpectomy', 'hyperplasia', 'hrt', 'personal_bc', 'ovarian', 'fam_ovarian', 'fam_male_bc', 'implant'], 'no'
+            ),
+            'personal_notes' => ['biopsy' => 'left side 2019'],
+            'family'         => [
+                'deg1' => ['relationship' => 'Parent', 'age' => '45'],
+                'deg2' => ['relationship' => 'none'],
+                'deg3' => ['relationship' => 'none'],
+            ],
+        ]))->assertRedirect(route('nurse.queue'));
 
         $record = PatientHistoryRecord::latest('id')->firstOrFail();
         $this->assertSame('submitted', $record->status);
@@ -86,12 +84,10 @@ class BusinessFeedbackTest extends TestCase
         $this->assertNotEmpty($record->patient_signature);
 
         // Registration must be blocked without a signature.
-        $this->actingAs($nurse)->post('/nurse/record', [
-            'action'    => 'submit',
-            'full_name' => 'No Signature',
-            'mobile1'   => '+971500000001',
-            'consent'   => '1',
-        ])->assertSessionHasErrors('patient_signature');
+        $this->actingAs($nurse)->post('/nurse/record', $this->registrationPayload([
+            'full_name'         => 'No Signature',
+            'patient_signature' => '',
+        ]))->assertSessionHasErrors('patient_signature');
 
         // 2. Clinic admin assigns the case to a Dubai doctor.
         $admin  = $this->user('mariam.s@focp.ae');
@@ -257,15 +253,12 @@ class BusinessFeedbackTest extends TestCase
         // The nurse registers the full profile and assigns the doctor in one step.
         $this->actingAs($nurse)->get('/nurse/record')->assertOk()->assertSee('Assign the case');
 
-        $this->actingAs($nurse)->post('/nurse/record', [
-            'action'           => 'submit',
-            'full_name'        => 'Direct To Doctor',
-            'mobile1'          => '+971500000010',
-            'consent'          => '1',
-            'patient_signature'=> 'data:image/png;base64,iVBORw0KGgo=',
-            'assign_role'      => 'doctor',
-            'assignee_id'      => $doctor->id,
-        ])->assertRedirect(route('nurse.queue'));
+        $this->actingAs($nurse)->post('/nurse/record', $this->registrationPayload([
+            'full_name'   => 'Direct To Doctor',
+            'mobile1'     => '+971500000010',
+            'assign_role' => 'doctor',
+            'assignee_id' => $doctor->id,
+        ]))->assertRedirect(route('nurse.queue'));
 
         $record = PatientHistoryRecord::latest('id')->firstOrFail();
         $this->assertSame('assigned', $record->status);
@@ -281,28 +274,24 @@ class BusinessFeedbackTest extends TestCase
         $admin = $this->user('mariam.s@focp.ae');
         $mammo = $this->user('n.khalid@focp.ae');
 
-        $this->actingAs($admin)->post('/clinic/register', [
-            'action'           => 'submit',
-            'full_name'        => 'Full Profile Patient',
-            'emirates_id'      => '784-1988-7654321-2',
-            'dob'              => '1988-02-03',
-            'nationality'      => 'Emirati',
-            'emirate'          => 'dubai',
-            'marital_status'   => 'married',
-            'mobile1'          => '+971500000011',
-            'email'            => 'full@example.com',
-            'age_at_menarche'  => 13,
-            'breast_implant'   => 'no',
-            'personal'         => ['hrt' => 'yes'],
-            'personal_notes'   => ['hrt' => 'since 2021'],
-            'family'           => ['deg2' => ['relationship' => 'Aunt', 'age' => '52']],
-            'cbe_result'       => 'normal',
-            'consent'          => '1',
-            'patient_signature'=> 'data:image/png;base64,iVBORw0KGgo=',
-            'signed_at'        => now()->toDateString(),
-            'assign_role'      => 'mammographer',
-            'assignee_id'      => $mammo->id,
-        ])->assertRedirect(route('clinic.queue'));
+        $this->actingAs($admin)->post('/clinic/register', $this->registrationPayload([
+            'full_name'       => 'Full Profile Patient',
+            'emirates_id'     => '784-1988-7654321-2',
+            'dob'             => '1988-02-03',
+            'mobile1'         => '+971500000011',
+            'email'           => 'full@example.com',
+            'personal'        => ['hrt' => 'yes'] + array_fill_keys(
+                ['lumpectomy', 'biopsy', 'hyperplasia', 'personal_bc', 'ovarian', 'fam_ovarian', 'fam_male_bc', 'implant'], 'no'
+            ),
+            'personal_notes'  => ['hrt' => 'since 2021'],
+            'family'          => [
+                'deg1' => ['relationship' => 'none'],
+                'deg2' => ['relationship' => 'Aunt', 'age' => '52'],
+                'deg3' => ['relationship' => 'none'],
+            ],
+            'assign_role'     => 'mammographer',
+            'assignee_id'     => $mammo->id,
+        ]))->assertRedirect(route('clinic.queue'));
 
         $record = PatientHistoryRecord::latest('id')->firstOrFail();
 
@@ -331,14 +320,97 @@ class BusinessFeedbackTest extends TestCase
             ->whereDoesntHave('clinics', fn ($q) => $q->where('clinics.id', $dubai->id))
             ->firstOrFail();
 
+        $this->actingAs($nurse)->post('/nurse/record', $this->registrationPayload([
+            'full_name'   => 'Wrong Clinic',
+            'mobile1'     => '+971500000012',
+            'assign_role' => 'doctor',
+            'assignee_id' => $outsider->id,
+        ]))->assertSessionHasErrors('assignee_id');
+    }
+
+    /**
+     * Business feedback round 3, registration:
+     *   1. the last-menstrual-period year list is open (no five-year cap);
+     *   2. "Abnormal" collects nothing further — no referral details, no recommendation;
+     *   3. every field is mandatory when the record is filed.
+     */
+    public function test_registration_year_range_is_open_and_abnormal_asks_for_nothing_more(): void
+    {
+        $nurse = $this->user('s.nuaimi@focp.ae');
+
+        $page = $this->actingAs($nurse)->get('/nurse/record')->assertOk();
+
+        // 1. The LMP year list reaches back to 1900, not just five years.
+        $page->assertSee('<option value="1900">1900</option>', false);
+
+        // 2. The referral fields the abnormal answer used to reveal are gone.
+        $page->assertDontSee('refer_mammo_date')
+            ->assertDontSee('refer_mammo_hospital')
+            ->assertDontSee('refer_uls_date')
+            ->assertDontSee('refer_uls_hospital');
+
+        // An abnormal previous screening is recorded on its own, with no extra input.
+        $this->actingAs($nurse)->post('/nurse/record', $this->registrationPayload([
+            'full_name'  => 'Abnormal History',
+            'mobile1'    => '+971500000013',
+            'cbe_result' => 'abnormal',
+        ]))->assertRedirect(route('nurse.queue'));
+
+        $record = PatientHistoryRecord::latest('id')->firstOrFail();
+        $this->assertSame('abnormal', $record->cbe_result);
+        $this->assertCount(0, $record->referrals);
+    }
+
+    public function test_submitting_a_registration_requires_every_field(): void
+    {
+        $nurse = $this->user('s.nuaimi@focp.ae');
+
+        // A bare payload is rejected field by field.
         $this->actingAs($nurse)->post('/nurse/record', [
-            'action'           => 'submit',
-            'full_name'        => 'Wrong Clinic',
-            'mobile1'          => '+971500000012',
-            'consent'          => '1',
-            'patient_signature'=> 'data:image/png;base64,iVBORw0KGgo=',
-            'assign_role'      => 'doctor',
-            'assignee_id'      => $outsider->id,
-        ])->assertSessionHasErrors('assignee_id');
+            'action'    => 'submit',
+            'full_name' => 'Missing Everything',
+            'mobile1'   => '+971500000014',
+        ])->assertSessionHasErrors([
+            'emirates_id', 'dob', 'nationality', 'emirate', 'marital_status', 'mobile2',
+            'email', 'age_at_menarche', 'lmp', 'breast_implant', 'cbe_result', 'signed_at',
+            'family.deg1.relationship',
+        ]);
+
+        // A "yes" in the personal history has to say what and when.
+        $this->actingAs($nurse)->post('/nurse/record', $this->registrationPayload([
+            'personal' => ['biopsy' => 'yes'] + array_fill_keys(
+                ['lumpectomy', 'hyperplasia', 'hrt', 'personal_bc', 'ovarian', 'fam_ovarian', 'fam_male_bc', 'implant'], 'no'
+            ),
+            'personal_notes' => [],
+        ]))->assertSessionHasErrors('personal_notes.biopsy');
+
+        // A named relative needs an age at diagnosis; "none" needs nothing.
+        $this->actingAs($nurse)->post('/nurse/record', $this->registrationPayload([
+            'family' => [
+                'deg1' => ['relationship' => 'Parent'],
+                'deg2' => ['relationship' => 'none'],
+                'deg3' => ['relationship' => 'none'],
+            ],
+        ]))->assertSessionHasErrors('family.deg1.age');
+
+        // "Never screened" is a complete answer — the last-mammogram date is then optional.
+        $this->actingAs($nurse)->post('/nurse/record', $this->registrationPayload([
+            'full_name'      => 'Never Screened',
+            'mobile1'        => '+971500000015',
+            'cbe_result'     => 'not_done',
+            'last_mammogram' => '',
+        ]))->assertRedirect(route('nurse.queue'));
+
+        // A draft stays permissive — the nurse can stop mid-interview.
+        $this->actingAs($nurse)->post('/nurse/record', [
+            'action'    => 'draft',
+            'full_name' => 'Partial Draft',
+            'mobile1'   => '+971500000016',
+        ])->assertRedirect(route('nurse.queue'));
+
+        $draft = PatientHistoryRecord::latest('id')->firstOrFail();
+        $this->assertSame('draft', $draft->status);
+        $this->assertSame('Partial Draft', $draft->patient->full_name);
+        $this->assertNull($draft->lmp);
     }
 }

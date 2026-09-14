@@ -517,7 +517,8 @@ return [
     // Roles / nav / permissions
     'role_mammographer'      => 'فني الأشعة',
     'role_mammo_label'       => 'فني الأشعة',
-    'nav_mammo_reports'      => 'تقارير المريضات',
+    'nav_mammo_screening'    => 'فحص التصوير الشعاعي',
+    'nav_patient_report'     => 'تقرير المريضة',
     'perm_manage_mammograms' => 'إدارة تقارير الماموجرام',
 
     // Registration — Section 1
@@ -740,4 +741,50 @@ return [
     'perm_manage_queue'              => 'إدارة مكتب أرقام الانتظار',
     'perm_record_mammogram_findings' => 'تسجيل نتائج التصوير الشعاعي',
     'role_volunteer'                 => 'متطوعة',
+
+    // ---- business feedback round 3 (Sep 2026) ----
+    'rel_none'                 => 'لا يوجد',
+    'never_screened'           => 'لم يتم الفحص',
+    'prev_screening_required'  => 'يرجى تحديد نتيجة الفحص السابق',
+
+    'findings_sec_patient'   => 'بيانات المريضة',
+    'findings_sec_findings'  => 'نتائج التصوير الشعاعي',
+    'findings_sec_assign'    => 'الإحالة إلى طبيب الأشعة',
+    'findings_assign_hint'   => 'عند الإرسال تُحال نتائج الفحص إلى طبيب الأشعة لإعداد التقرير.',
+    'findings_assigned_ok'   => 'تم إرسال فحص التصوير الشعاعي وإحالته إلى :name.',
+    'patient_number'         => 'رقم المريضة',
+    'pc_number_ph'           => 'مثال: PC-4821',
+    'pc_number_manual_help'  => 'يُدخل يدوياً من وحدة التصوير الشعاعي.',
+    'select_radiologist'     => 'اختر طبيب الأشعة',
+    'no_radiologist_in_clinic' => 'لا يوجد طبيب أشعة معيَّن لهذه العيادة — يرجى مراجعة الإدارة.',
+
+    'role_radiologist'       => 'طبيب الأشعة',
+    'role_radio_label'       => 'طبيب الأشعة',
+    'role_radio_title'       => 'دخول طبيب الأشعة',
+    'role_radio_desc'        => 'مراجعة نتائج التصوير الشعاعي وإرفاق التقرير النهائي وإرساله إلى المريضة.',
+    'perm_manage_radiology'  => 'إعداد تقارير التصوير الشعاعي',
+
+    'rad_queue_hint'         => 'فحوصات التصوير الشعاعي المحالة إليك. أرفق التقرير النهائي بصيغة PDF وأرسله إلى المريضة.',
+    'rad_awaiting'           => 'بانتظار تقريري',
+    'rad_awaiting_hint'      => 'تم إرسالها من فنية التصوير وبانتظار تقريرك.',
+    'rad_awaiting_empty'     => 'لا توجد حالة بانتظار تقريرك.',
+    'rad_sent'               => 'تم إرسال التقرير',
+    'rad_sent_empty'         => 'لم يتم إرسال أي تقرير بعد.',
+
+    'rad_patient_details'    => 'بيانات المريضة',
+    'rad_mammo_findings'     => 'نتائج التصوير الشعاعي',
+    'rad_final_report'       => 'التقرير النهائي (PDF)',
+    'rad_final_report_hint'  => 'أرفق التقرير الصادر من نظام الأشعة الطبي. بصيغة PDF فقط، حتى 20 ميغابايت.',
+    'rad_replace_report'     => 'استبدال التقرير',
+    'rad_send_report'        => 'إرسال التقرير إلى المريضة',
+    'rad_resend_report'      => 'إعادة الإرسال',
+    'rad_send_channels'      => 'يُرسل ملف PDF إلى بريد المريضة مع إشعار عبر الرسائل النصية وواتساب',
+    'rad_uploaded_ok'        => 'تم إرفاق التقرير النهائي.',
+    'rad_sent_ok'            => 'تم إرسال التقرير إلى المريضة.',
+    'rad_upload_first'       => 'أرفق التقرير النهائي بصيغة PDF قبل الإرسال.',
+
+    'mammograms_done'        => 'التصوير الشعاعي',
+    'mammograms_sub'         => 'تقارير فحص مُرسلة',
+    'clinical_exams_done'    => 'الفحوصات السريرية',
+    'clinical_exams_sub'     => 'تقارير فحص مُرسلة',
 ];

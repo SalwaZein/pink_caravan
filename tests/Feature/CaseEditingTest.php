@@ -41,27 +41,23 @@ class CaseEditingTest extends TestCase
     /** Register a submitted case routed straight to the Dubai doctor. */
     private function openCase(): PatientHistoryRecord
     {
-        $this->actingAs($this->user('s.nuaimi@focp.ae'))->post('/nurse/record', [
-            'action'           => 'submit',
-            'full_name'        => 'Editable Patient',
-            'mobile1'          => '+971500000020',
-            'consent'          => '1',
-            'patient_signature'=> 'data:image/png;base64,iVBORw0KGgo=',
-            'assign_role'      => 'doctor',
-            'assignee_id'      => $this->doctor()->id,
-        ])->assertRedirect();
+        $this->actingAs($this->user('s.nuaimi@focp.ae'))->post('/nurse/record', $this->recordPayload([
+            'action'      => 'submit',
+            'assign_role' => 'doctor',
+            'assignee_id' => $this->doctor()->id,
+        ]))->assertRedirect();
 
         return PatientHistoryRecord::latest('id')->firstOrFail();
     }
 
-    /** The nurse form posts the full profile; this is the minimum valid payload. */
+    /** The full profile the nurse form posts — every field is mandatory once filed. */
     private function recordPayload(array $overrides = []): array
     {
-        return array_merge([
+        return $this->registrationPayload(array_merge([
             'action'    => 'draft',
             'full_name' => 'Editable Patient',
             'mobile1'   => '+971500000020',
-        ], $overrides);
+        ], $overrides));
     }
 
     public function test_nurse_and_clinic_admin_can_edit_a_case_that_has_left_draft(): void

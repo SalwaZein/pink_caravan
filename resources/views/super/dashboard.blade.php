@@ -19,7 +19,7 @@
             </div>
         </form>
 
-        <div style="display:grid;grid-template-columns:repeat(5, 1fr);gap:14px;margin-bottom:18px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(185px, 1fr));gap:14px;margin-bottom:18px;">
             @foreach ($dashStats as $ds)
                 <div style="background:#fff;border:1px solid #EFE2EA;border-radius:16px;padding:18px;box-shadow:0 3px 14px rgba(120,60,90,.05);">
                     <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;"><div style="width:30px;height:30px;border-radius:9px;background:{{ $ds['tint'] }};display:flex;align-items:center;justify-content:center;font-size:15px;">{{ $ds['icon'] }}</div></div>

@@ -1,8 +1,9 @@
 @props([
     'name',
-    'value'   => null,
-    'minYear' => null,
-    'maxYear' => null,
+    'value'    => null,
+    'minYear'  => null,
+    'maxYear'  => null,
+    'required' => false,
 ])
 
 @php
@@ -14,6 +15,15 @@
 
     $sel  = 'padding:10px 8px;border:1px solid #E3D2DC;border-radius:9px;font-size:13.5px;background:#fff;color:#2A2230;min-width:0;';
     $months = collect(range(1, 12))->map(fn ($m) => ['n' => $m, 'label' => __('pc.mon_'.$m)])->all();
+
+    // A required date is enforced on whichever input mode is VISIBLE: a required
+    // control inside the hidden mode would be unfocusable and block the submit
+    // with no message the user can see. The posted value stays the hidden ISO input.
+    // `required` may be a boolean or an Alpine expression evaluated in the parent
+    // scope (e.g. "result !== 'not_done'") for a conditionally mandatory date.
+    $reqExpr = is_string($required) ? '('.$required.')' : ($required ? 'true' : 'false');
+    $reqPick = $reqExpr === 'false' ? 'false' : "mode === 'pick' && ".$reqExpr;
+    $reqType = $reqExpr === 'false' ? 'false' : "mode === 'type' && ".$reqExpr;
 @endphp
 
 <div class="pc-datefield" style="margin-top:5px;"
@@ -26,19 +36,19 @@
     <div x-show="mode === 'pick'" style="display:grid;grid-template-columns:86px 1fr 104px;gap:6px;">
         {{-- Every option list is server-rendered: an x-for list is built after
              x-model applies, which would leave a preset date showing blank. --}}
-        <select x-model="d" style="{{ $sel }}" aria-label="{{ __('pc.date_day') }}">
+        <select x-model="d" :required="{{ $reqPick }}" style="{{ $sel }}" aria-label="{{ __('pc.date_day') }}">
             <option value="">{{ __('pc.date_day') }}</option>
             @foreach (range(1, 31) as $day)
                 <option value="{{ $day }}" :disabled="{{ $day }} > maxDay">{{ $day }}</option>
             @endforeach
         </select>
-        <select x-model="m" @change="clampDay()" style="{{ $sel }}" aria-label="{{ __('pc.date_month') }}">
+        <select x-model="m" @change="clampDay()" :required="{{ $reqPick }}" style="{{ $sel }}" aria-label="{{ __('pc.date_month') }}">
             <option value="">{{ __('pc.date_month') }}</option>
             @foreach ($months as $mo)
                 <option value="{{ $mo['n'] }}">{{ $mo['label'] }}</option>
             @endforeach
         </select>
-        <select x-model="y" @change="clampDay()" style="{{ $sel }}" aria-label="{{ __('pc.date_year') }}">
+        <select x-model="y" @change="clampDay()" :required="{{ $reqPick }}" style="{{ $sel }}" aria-label="{{ __('pc.date_year') }}">
             <option value="">{{ __('pc.date_year') }}</option>
             @foreach (range($max, $min) as $year)
                 <option value="{{ $year }}">{{ $year }}</option>
@@ -48,7 +58,7 @@
 
     {{-- Mode 2 — type it: inputmode="numeric" opens the keypad on phones/tablets. --}}
     <div x-show="mode === 'type'" x-cloak>
-        <input type="text" x-ref="typedInput" x-model="typed" @input="onTyped()"
+        <input type="text" x-ref="typedInput" x-model="typed" @input="onTyped()" :required="{{ $reqType }}"
                inputmode="numeric" autocomplete="off" maxlength="10" placeholder="{{ __('pc.date_pattern') }}"
                aria-label="{{ __('pc.date_type_hint') }}"
                style="display:block;width:100%;padding:10px 11px;border:1px solid #E3D2DC;border-radius:9px;font-size:13.5px;letter-spacing:.04em;" />

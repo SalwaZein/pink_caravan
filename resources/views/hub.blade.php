@@ -8,8 +8,11 @@
     // Business feedback: the service-booking box was replaced by the mammographer
     // login (bookings stay reachable at /booking for partners with the link), and a
     // dedicated volunteer login was added for the WhatsApp token & queue desk.
+    // The x-ray icon reads as "radiologist", so it belongs to that card; the
+    // mammographer — who runs the imaging session — gets the camera.
     $roleCards = [
-        ['icon' => '🩻', 'tint' => '#E4F4EF', 'title' => __('pc.role_mammo_title'),   'desc' => __('pc.role_mammo_desc'),   'url' => $loginUrl, 'cta' => __('pc.staff_login_cta')],
+        ['icon' => '📷', 'tint' => '#E4F4EF', 'title' => __('pc.role_mammo_title'),   'desc' => __('pc.role_mammo_desc'),   'url' => $loginUrl, 'cta' => __('pc.staff_login_cta')],
+        ['icon' => '🩻', 'tint' => '#E6F0F4', 'title' => __('pc.role_radio_title'),   'desc' => __('pc.role_radio_desc'),   'url' => $loginUrl, 'cta' => __('pc.staff_login_cta')],
         ['icon' => '💗', 'tint' => '#F3E6FA', 'title' => __('pc.role_patient_title'), 'desc' => __('pc.role_patient_desc'), 'url' => url('/patient'), 'cta' => __('pc.enter')],
         ['icon' => '🩺', 'tint' => '#E4F4EF', 'title' => __('pc.role_nurse_title'),   'desc' => __('pc.role_nurse_desc'),   'url' => $loginUrl, 'cta' => __('pc.staff_login_cta')],
         ['icon' => '👩‍⚕️', 'tint' => '#E6EEFB', 'title' => __('pc.role_doctor_title'),  'desc' => __('pc.role_doctor_desc'),  'url' => $loginUrl, 'cta' => __('pc.staff_login_cta')],

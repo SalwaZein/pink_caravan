@@ -26,6 +26,8 @@
         <tr><td class="k">Total records</td><td class="v">{{ number_format($stats['total']) }}</td></tr>
         <tr><td class="k">Women screened (completed)</td><td class="v">{{ number_format($stats['completed']) }}</td></tr>
         <tr><td class="k">Pending cases</td><td class="v">{{ number_format($stats['pending']) }}</td></tr>
+        <tr><td class="k">Mammograms (screening reports submitted)</td><td class="v">{{ number_format($stats['mammograms']) }}</td></tr>
+        <tr><td class="k">Clinical examinations (reports submitted)</td><td class="v">{{ number_format($stats['clinicalExams']) }}</td></tr>
         <tr><td class="k">Normal results</td><td class="v">{{ number_format($stats['normal']) }} ({{ $stats['normalPct'] }}%)</td></tr>
         <tr><td class="k">Abnormal results</td><td class="v">{{ number_format($stats['abnormal']) }} ({{ $stats['abnormalRate'] }}%)</td></tr>
         <tr><td class="k">Referrals (closed)</td><td class="v">{{ number_format($stats['referrals']) }} ({{ $stats['referralsClosed'] }})</td></tr>
