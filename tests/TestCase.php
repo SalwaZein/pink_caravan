@@ -3,9 +3,21 @@
 namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Http;
 
 abstract class TestCase extends BaseTestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // The local .env carries the real WhatsApp credentials. Tests must never
+        // message a real number: the API starts unconfigured (stub) and any HTTP
+        // call a test has not explicitly faked is refused.
+        config(['services.whatsapp.url' => null, 'services.whatsapp.token' => null]);
+        Http::preventStrayRequests();
+    }
+
     /**
      * A complete Patient History & Record Sheet (Form 3) payload.
      *

@@ -91,9 +91,9 @@ Set standard Laravel mail vars in `.env` once FOCP provides SMTP:
 Also ask FOCP for **SPF + DKIM (+ DMARC)** on the sending domain so mail isn't flagged as spam. (A transactional provider — SES/SendGrid/Mailgun — is recommended for campaign volume.)
 
 ### SMS + WhatsApp (report-ready push)
-Configurable HTTP gateway — set per channel and `PatientNotifier` will POST `{to, from, body}`:
-`SMS_GATEWAY_URL`, `SMS_GATEWAY_TOKEN`, `SMS_FROM`, `WHATSAPP_GATEWAY_URL`, `WHATSAPP_GATEWAY_TOKEN`, `WHATSAPP_FROM`.
-When unset, messages are logged to `storage/logs/laravel.log`. For a specific provider (Twilio, Unifonic, WhatsApp Business API) a small adapter may be needed to match its payload.
+SMS is a configurable HTTP gateway (`Messenger` POSTs `{to, from, body}`). WhatsApp is the FOCP number via Outreachable (Meta Cloud API v19.0) and sends approved templates only — driver `app/Support/WhatsApp.php`, variables per message in `WhatsApp::TEMPLATES`:
+`SMS_GATEWAY_URL`, `SMS_GATEWAY_TOKEN`, `SMS_FROM`, `WHATSAPP_API_URL`, `WHATSAPP_API_TOKEN`, `WHATSAPP_TEMPLATE_LANGUAGE`, `WHATSAPP_TPL_*` (approved Outreachable template name per message).
+When unset, messages are logged to `storage/logs/laravel.log`. For a specific SMS provider (Twilio, Unifonic) a small adapter may be needed to match its payload.
 
 ### Emirates ID reader
 `EMIRATES_ID_READER_URL` → the local reader bridge on the clinic device (official Emirates ID Toolkit / a small agent) that returns the normalised card JSON (see `EmiratesIdController` docblock for the contract). When unset, the built-in dev mock is used. The reader must run on the same machine as the browser (localhost); the fetch is client-side.

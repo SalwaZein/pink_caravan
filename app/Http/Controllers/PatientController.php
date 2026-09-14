@@ -8,6 +8,7 @@ use App\Models\PatientHistoryRecord;
 use App\Support\Audit;
 use App\Support\ReportPresenter;
 use App\Support\ReportService;
+use App\Support\WhatsApp;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -38,8 +39,10 @@ class PatientController extends Controller
         if ($patient) {
             OtpCode::where('mobile', $mobile)->whereNull('consumed_at')->delete();
             OtpCode::create(['mobile' => $mobile, 'code' => $code, 'expires_at' => now()->addMinutes(10)]);
-            // Stub delivery: log the code. Replace with SMS/email gateway when available.
-            Log::info("Pink Caravan OTP for {$mobile}: {$code}");
+            // Delivered on WhatsApp with the approved authentication template; logged
+            // (stub) when the WhatsApp API is not configured.
+            $channel = WhatsApp::send($mobile, 'patient_otp', ['code' => $code], "Pink Caravan OTP for {$mobile}: {$code}");
+            Log::info("[patient otp] code issued for {$mobile} (WhatsApp: {$channel})");
         }
 
         $request->session()->put('otp_mobile', $mobile);

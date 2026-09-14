@@ -35,7 +35,11 @@ class PatientNotifier
         return [
             'email'    => self::email($patient?->email, $record, $link),
             'sms'      => self::gateway('sms', $patient?->mobile1, $body),
-            'whatsapp' => self::gateway('whatsapp', $patient?->mobile1, $body),
+            'whatsapp' => WhatsApp::send($patient?->mobile1, 'report_ready', [
+                'patient_name' => $patient?->full_name,
+                'report_ref'   => $record->ref_no,
+                'portal_link'  => $link,
+            ], $body),
         ];
     }
 
@@ -55,7 +59,11 @@ class PatientNotifier
         return [
             'email'    => self::send($patient?->email, $record, fn () => new RadiologyReportMail($record, $link), 'radiology-report'),
             'sms'      => self::gateway('sms', $patient?->mobile1, $body),
-            'whatsapp' => self::gateway('whatsapp', $patient?->mobile1, $body),
+            'whatsapp' => WhatsApp::send($patient?->mobile1, 'radiology_report', [
+                'patient_name' => $patient?->full_name,
+                'report_ref'   => $record->ref_no,
+                'portal_link'  => $link,
+            ], $body),
         ];
     }
 
