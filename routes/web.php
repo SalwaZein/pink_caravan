@@ -11,6 +11,7 @@ use App\Http\Controllers\MammographerController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\PatientController;
 use App\Http\Controllers\QueueController;
+use App\Http\Controllers\RadiologistController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\RecordController;
 use App\Http\Controllers\ServiceBookingController;
@@ -101,6 +102,16 @@ Route::middleware(['auth', 'can:manage_mammograms'])->group(function () {
         Route::get('/mammographer/record/{record}/findings', [MammographerController::class, 'findings'])->name('mammographer.findings');
         Route::put('/mammographer/record/{record}/findings', [MammographerController::class, 'saveFindings'])->name('mammographer.findings.save');
     });
+});
+
+// ---- Radiologist (auth) — the "Patient Report" tab: read the screening, attach
+//      the final PDF from the radiology system and send it to the patient.
+Route::middleware(['auth', 'can:manage_radiology'])->prefix('radiologist')->name('radiologist.')->group(function () {
+    Route::get('/reports',                  [RadiologistController::class, 'index'])->name('reports');
+    Route::get('/reports/{record}',         [RadiologistController::class, 'show'])->whereNumber('record')->name('report');
+    Route::post('/reports/{record}',        [RadiologistController::class, 'upload'])->whereNumber('record')->name('report.upload');
+    Route::post('/reports/{record}/send',   [RadiologistController::class, 'send'])->whereNumber('record')->name('report.send');
+    Route::get('/reports/{record}/file',    [RadiologistController::class, 'report'])->whereNumber('record')->name('report.file');
 });
 
 // ---- Visitor queue & WhatsApp tokens (volunteer desk; also open to clinic/super admins) ----

@@ -71,7 +71,6 @@ class RecordController extends Controller
             $record = $this->fillRecord(new PatientHistoryRecord(), $patient, $data, $isSubmit, $clinicId, $pc);
             $record->save();
 
-            $this->syncReferrals($record, $data);
             $this->applyAssignment($record, $data, $isSubmit);
 
             Audit::log($isSubmit ? 'record.submitted' : 'record.drafted', $record, "{$pc} — {$patient->full_name}");
@@ -88,7 +87,7 @@ class RecordController extends Controller
     {
         $this->authorizeClinic($record);
 
-        $record->load('patient', 'referrals');
+        $record->load('patient');
 
         return view('staff.nurse.record', $this->viewData($record, $record->patient, $record->clinic_id));
     }
@@ -102,7 +101,10 @@ class RecordController extends Controller
         }
 
         $isSubmit = $request->input('action') === 'submit';
-        $data = $this->validated($request, $isSubmit);
+        // A case that has already left draft was filed complete once — editing it
+        // must keep it complete, so the mandatory rules apply to its "Save changes" too.
+        $filed = $record->status !== PatientHistoryRecord::DRAFT;
+        $data = $this->validated($request, $isSubmit, $filed);
 
         DB::transaction(function () use ($data, $isSubmit, $record) {
             $patient = $record->patient;
@@ -120,7 +122,6 @@ class RecordController extends Controller
             ]);
 
             $this->fillRecord($record, $patient, $data, $isSubmit, $record->clinic_id, $record->ref_no)->save();
-            $this->syncReferrals($record, $data);
             $this->applyAssignment($record, $data, $isSubmit);
 
             Audit::log($isSubmit ? 'record.submitted' : 'record.updated', $record, "{$record->ref_no} — {$patient->full_name}");
@@ -193,33 +194,48 @@ class RecordController extends Controller
 
     // ---- helpers ----
 
-    private function validated(Request $request, bool $isSubmit): array
+    /**
+     * Every field on the registration form is mandatory (business feedback round 3).
+     *
+     * Mandatory is enforced when the record is actually filed — submitting it, or
+     * saving a case that has already left draft. A deliberate "Save draft" stays
+     * permissive, which is the whole point of a draft: the nurse can stop
+     * mid-interview and come back.
+     *
+     * Two answers exist so "nothing to report" never has to be invented: a family
+     * history degree can be answered "none", and the previous-screening result can
+     * be "not_done" (which is what makes the last-mammogram date optional).
+     */
+    private function validated(Request $request, bool $isSubmit, bool $filed = false): array
     {
+        $must = ($isSubmit || $filed) ? 'required' : 'nullable';
+
         $rules = [
             'full_name'          => ['required', 'string', 'max:255'],
-            'emirates_id'        => ['nullable', 'string', 'max:30'],
-            'dob'                => ['nullable', 'date'],
-            'nationality'        => ['nullable', 'string', 'max:255'],
-            'emirate'            => ['nullable', 'string', 'max:255'],
-            'marital_status'     => ['nullable', 'in:single,married,widow'],
+            'emirates_id'        => [$must, 'string', 'max:30'],
+            'dob'                => [$must, 'date'],
+            'nationality'        => [$must, 'string', 'max:255'],
+            'emirate'            => [$must, 'string', 'max:255'],
+            'marital_status'     => [$must, 'in:single,married,widow'],
             'mobile1'            => ['required', 'string', 'max:40'],
-            'mobile2'            => ['nullable', 'string', 'max:40'],
-            'email'              => ['nullable', 'email', 'max:255'],
-            'age_at_menarche'    => ['nullable', 'integer', 'min:0', 'max:99'],
-            'breast_implant'     => ['nullable', 'in:yes,no'],
-            'lmp'                => ['nullable', 'date'],
-            'last_mammogram'     => ['nullable', 'date'],
-            'cbe_result'         => ['nullable', 'in:normal,abnormal'],
+            'mobile2'            => [$must, 'string', 'max:40'],
+            'email'              => [$must, 'email', 'max:255'],
+            'age_at_menarche'    => [$must, 'integer', 'min:0', 'max:99'],
+            'breast_implant'     => [$must, 'in:yes,no'],
+            'lmp'                => [$must, 'date'],
+            'cbe_result'         => [$must, 'in:normal,abnormal,not_done'],
+            // Only asked for when the patient has actually been screened before.
+            // `nullable` keeps the `date` rule off an empty "never screened" value;
+            // `required_unless` still fires when the answer says she was screened.
+            'last_mammogram'     => array_filter([
+                'nullable', ($isSubmit || $filed) ? 'required_unless:cbe_result,not_done' : null, 'date',
+            ]),
             'personal'           => ['array'],
             'personal_notes'     => ['array'],
             'family'             => ['array'],
-            'refer_mammo_date'   => ['nullable', 'date'],
-            'refer_mammo_hospital' => ['nullable', 'string', 'max:255'],
-            'refer_uls_date'     => ['nullable', 'date'],
-            'refer_uls_hospital' => ['nullable', 'string', 'max:255'],
             'consent'            => ['nullable', 'boolean'],
             'patient_signature'  => ['nullable', 'string'],
-            'signed_at'          => ['nullable', 'date'],
+            'signed_at'          => [$must, 'date'],
             'action'             => ['required', 'in:draft,submit'],
             // Optional routing of the case straight from the registration form.
             'assign_role'        => ['nullable', 'in:'.implode(',', self::ASSIGN_ROLES)],
@@ -227,12 +243,46 @@ class RecordController extends Controller
             'nurse_id'           => ['nullable', 'integer'], // legacy field name for the nurse hand-off
         ];
 
+        if ($isSubmit || $filed) {
+            // A "yes" in the personal history has to say what and when.
+            foreach (self::PERSONAL_ITEMS as $item) {
+                $rules["personal.$item"]       = ['required', 'in:yes,no'];
+                $rules["personal_notes.$item"] = ["required_if:personal.$item,yes", 'nullable', 'string', 'max:2000'];
+            }
+
+            // Each family-history degree must be answered — "none" included.
+            foreach (['deg1', 'deg2', 'deg3'] as $deg) {
+                $rules["family.$deg.relationship"] = ['required', 'string', 'max:60'];
+                $rules["family.$deg.age"] = [
+                    "required_unless:family.$deg.relationship,none", 'nullable', 'integer', 'min:0', 'max:120',
+                ];
+            }
+        }
+
         if ($isSubmit) {
             $rules['consent'] = ['accepted'];                 // consent required on submit
             $rules['patient_signature'] = ['required', 'string']; // patient signature required on submit
         }
 
-        return $request->validate($rules);
+        return $request->validate($rules, [], $this->fieldNames());
+    }
+
+    /** Readable names for the per-answer rules, so errors don't read "family.deg1.age". */
+    private function fieldNames(): array
+    {
+        $names = [];
+
+        foreach (self::PERSONAL_ITEMS as $item) {
+            $names["personal.$item"]       = __('pc.'.$item);
+            $names["personal_notes.$item"] = __('pc.'.$item).' — '.mb_strtolower(__('pc.add_details'));
+        }
+
+        foreach (['deg1', 'deg2', 'deg3'] as $deg) {
+            $names["family.$deg.relationship"] = __('pc.'.$deg).' — '.mb_strtolower(__('pc.relationship'));
+            $names["family.$deg.age"]          = __('pc.'.$deg).' — '.mb_strtolower(__('pc.age_at_diagnosis'));
+        }
+
+        return $names;
     }
 
     private function fillRecord(PatientHistoryRecord $record, Patient $patient, array $data, bool $isSubmit, ?int $clinicId, string $ref): PatientHistoryRecord
@@ -250,10 +300,15 @@ class RecordController extends Controller
         }
 
         // Family history: one entry per degree — { relationship, age at diagnosis }.
+        // "none" is an explicit answer meaning no affected relative at that degree,
+        // so it is recorded as nothing rather than as a relationship.
         $family = [];
         foreach (['deg1', 'deg2', 'deg3'] as $deg) {
             $rel = $data['family'][$deg]['relationship'] ?? null;
             $age = $data['family'][$deg]['age'] ?? null;
+            if ($rel === 'none') {
+                continue;
+            }
             if ($rel || ($age !== null && $age !== '')) {
                 $family[$deg] = [
                     'relationship' => $rel ?: null,
@@ -373,24 +428,4 @@ class RecordController extends Controller
         }
     }
 
-    /** Recreate referral rows from the abnormal-result referral fields. */
-    private function syncReferrals(PatientHistoryRecord $record, array $data): void
-    {
-        $record->referrals()->delete();
-
-        if (($data['cbe_result'] ?? null) !== 'abnormal') {
-            return;
-        }
-
-        if (! empty($data['refer_mammo_date']) || ! empty($data['refer_mammo_hospital'])) {
-            $record->referrals()->create([
-                'type' => 'mammogram', 'referral_date' => $data['refer_mammo_date'] ?? null, 'hospital' => $data['refer_mammo_hospital'] ?? null,
-            ]);
-        }
-        if (! empty($data['refer_uls_date']) || ! empty($data['refer_uls_hospital'])) {
-            $record->referrals()->create([
-                'type' => 'uls', 'referral_date' => $data['refer_uls_date'] ?? null, 'hospital' => $data['refer_uls_hospital'] ?? null,
-            ]);
-        }
-    }
 }

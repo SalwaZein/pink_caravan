@@ -15,19 +15,22 @@ class Rbac
         'administration'   => ['manage_clinics', 'manage_users'],
         'service_bookings' => ['review_bookings', 'approve_bookings', 'mark_bookings_paid', 'complete_bookings'],
         'operations'       => ['register_patients', 'assign_doctors', 'manage_queue'],
-        'clinical'         => ['fill_record_sheet', 'perform_clinical_exam', 'manage_mammograms', 'record_mammogram_findings'],
+        'clinical'         => ['fill_record_sheet', 'perform_clinical_exam', 'manage_mammograms', 'record_mammogram_findings', 'manage_radiology'],
         'reporting'        => ['view_dashboards', 'view_audit'],
     ];
 
     /** Default capabilities per role (a starting template — fully editable per user). */
     public const ROLE_DEFAULTS = [
-        'super_admin'  => ['manage_clinics', 'manage_users', 'review_bookings', 'approve_bookings', 'mark_bookings_paid', 'complete_bookings', 'register_patients', 'assign_doctors', 'manage_queue', 'fill_record_sheet', 'perform_clinical_exam', 'manage_mammograms', 'record_mammogram_findings', 'view_dashboards', 'view_audit'],
+        'super_admin'  => ['manage_clinics', 'manage_users', 'review_bookings', 'approve_bookings', 'mark_bookings_paid', 'complete_bookings', 'register_patients', 'assign_doctors', 'manage_queue', 'fill_record_sheet', 'perform_clinical_exam', 'manage_mammograms', 'record_mammogram_findings', 'manage_radiology', 'view_dashboards', 'view_audit'],
         // The clinic admin and the nurse both register the FULL patient profile (Form 3)
         // and can route the case straight to a doctor or a mammographer.
         'clinic_admin' => ['register_patients', 'fill_record_sheet', 'assign_doctors', 'manage_queue', 'view_dashboards'],
         'nurse'        => ['register_patients', 'fill_record_sheet', 'assign_doctors'],
         'doctor'       => ['perform_clinical_exam'],
         'mammographer' => ['manage_mammograms', 'record_mammogram_findings'],
+        // Reads the mammography screening, attaches the final PDF report from the
+        // radiology system and sends it to the patient.
+        'radiologist'  => ['manage_radiology'],
         // Runs the WhatsApp token desk at the clinic door — nothing clinical.
         'volunteer'    => ['manage_queue'],
     ];

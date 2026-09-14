@@ -518,7 +518,8 @@ return [
     // Roles / nav / permissions
     'role_mammographer'      => 'Mammographer',
     'role_mammo_label'       => 'Mammographer',
-    'nav_mammo_reports'      => 'Patient reports',
+    'nav_mammo_screening'    => 'Mammography Screening',
+    'nav_patient_report'     => 'Patient Report',
     'perm_manage_mammograms' => 'Manage mammogram reports',
 
     // Registration — Section 1
@@ -558,7 +559,7 @@ return [
     'yes_short'       => 'Yes',
 
     // Mammographer workspace / post-campaign report
-    'mammo_queue_hint'   => 'Enter the PC number, upload the mammogram report, then send it to the patient.',
+    'mammo_queue_hint'   => 'Open a case, record the mammography screening and assign it to a radiologist.',
     'manage_report'      => 'Manage report',
     'upload_mammo_report'=> 'Upload mammogram report',
     'mammo_report'       => 'Mammogram report',
@@ -638,7 +639,7 @@ return [
     'mammo_awaiting_hint'    => 'Cases you have handled where the report has not been sent yet. They stay open to you until you upload and send it, even after the clinic has closed the case.',
     'mammo_awaiting_empty'   => 'No case is waiting for a report.',
 
-    'findings_title'              => 'Mammography findings',
+    'findings_title'              => 'Mammography Screening',
     'findings_sec_study'          => 'The study',
     'findings_sec_sides'          => 'Findings by side',
     'findings_sec_impression'     => 'Impression & recommendation',
@@ -648,13 +649,13 @@ return [
     'findings_comparison'         => 'Compared with prior studies',
     'findings_comparison_ph'      => 'e.g. compared with the mammogram of March 2024 — no interval change.',
     'findings_birads'             => 'BI-RADS assessment',
-    'findings_description'        => 'Findings',
-    'findings_description_ph'     => 'Describe any mass, calcification, asymmetry or architectural distortion, with location and size.',
+    'findings_description'        => 'Mammography findings',
+    'findings_description_ph'     => 'Describe what the study shows — any mass, calcification, asymmetry or distortion, with side, location and size.',
     'findings_impression'         => 'Overall impression',
     'findings_impression_ph'      => 'Summarise the assessment in one or two sentences.',
     'findings_recommendation'     => 'Recommendation',
     'findings_notes'              => 'Additional notes',
-    'findings_submit'             => 'Submit findings',
+    'findings_submit'             => 'Submit and assign to radiologist',
     'findings_submitted'          => 'Findings submitted',
     'findings_draft_saved'        => 'Draft saved — not submitted yet.',
     'findings_none_yet'           => 'No findings recorded yet.',
@@ -741,4 +742,54 @@ return [
     'perm_manage_queue'              => 'Run the visitor queue desk',
     'perm_record_mammogram_findings' => 'Record mammography findings',
     'role_volunteer'                 => 'Volunteer',
+
+    // ---- business feedback round 3 (Sep 2026) ----
+    // Registration: explicit "nothing to report" answers, so every field can be mandatory.
+    'rel_none'                 => 'None',
+    'never_screened'           => 'Never screened',
+    'prev_screening_required'  => 'Answer the previous screening result',
+
+    // Mammography Screening (the trimmed mammographer form)
+    'findings_sec_patient'   => 'Patient details',
+    'findings_sec_findings'  => 'Mammography findings',
+    'findings_sec_assign'    => 'Assign to a radiologist',
+    'findings_assign_hint'   => 'On submit the screening goes to this radiologist to report on.',
+    'findings_assigned_ok'   => 'Mammography screening submitted and assigned to :name.',
+    'patient_number'         => 'Patient Number',
+    'pc_number_ph'           => 'e.g. PC-4821',
+    'pc_number_manual_help'  => 'Entered by hand from the mammography unit.',
+    'select_radiologist'     => 'Select a radiologist',
+    'no_radiologist_in_clinic' => 'No radiologist is assigned to this clinic yet — ask the administrator to assign one.',
+
+    // Radiologist role, hub card and the Patient Report tab
+    'role_radiologist'       => 'Radiologist',
+    'role_radio_label'       => 'Radiologist',
+    'role_radio_title'       => 'Radiologist Login',
+    'role_radio_desc'        => 'Read the mammography screening, attach the final report and send it to the patient.',
+    'perm_manage_radiology'  => 'Report on mammography studies',
+
+    'rad_queue_hint'         => 'Mammography screenings assigned to you. Attach the final PDF report and send it to the patient.',
+    'rad_awaiting'           => 'Awaiting my report',
+    'rad_awaiting_hint'      => 'Submitted by the mammographer and waiting on your report.',
+    'rad_awaiting_empty'     => 'No study is waiting for your report.',
+    'rad_sent'               => 'Report sent',
+    'rad_sent_empty'         => 'No report has been sent yet.',
+
+    'rad_patient_details'    => 'Patient details',
+    'rad_mammo_findings'     => 'Mammography findings',
+    'rad_final_report'       => 'Final report (PDF)',
+    'rad_final_report_hint'  => 'Attach the report generated by the radiology medical system. PDF only, up to 20 MB.',
+    'rad_replace_report'     => 'Replace report',
+    'rad_send_report'        => 'Send report to patient',
+    'rad_resend_report'      => 'Send again',
+    'rad_send_channels'      => 'Emails the PDF to the patient and notifies her by SMS & WhatsApp',
+    'rad_uploaded_ok'        => 'Final report attached.',
+    'rad_sent_ok'            => 'The report was sent to the patient.',
+    'rad_upload_first'       => 'Attach the final PDF report before sending it.',
+
+    // Dashboard: procedures actually performed
+    'mammograms_done'        => 'Mammograms',
+    'mammograms_sub'         => 'Screening reports submitted',
+    'clinical_exams_done'    => 'Clinical examinations',
+    'clinical_exams_sub'     => 'Examination reports submitted',
 ];

@@ -49,6 +49,8 @@ class RecordPresenter
             'init'     => mb_substr($init, 0, 2),
             'tint'     => self::TINTS[$i % count(self::TINTS)],
             'age'      => $r->patient?->dob?->age ?? '—',
+            // The PC number the mammographer enters by hand (blank until she does).
+            'pcNumber' => $r->patient?->manual_pc_number,
             'emirate'  => $r->patient?->emirate ? __('pc.em_'.$r->patient->emirate) : '',
             'time'     => $r->created_at?->format('H:i') ?? '',
             'stLabel'  => $status['label'], 'stC' => $status['c'], 'stBg' => $status['bg'],

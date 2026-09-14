@@ -58,6 +58,12 @@ class DashboardService
         $abnormal = $resultQuery('abnormal');
         $resultTotal = $normal + $abnormal;
 
+        // Procedure counts: a submitted report is what counts, not an assignment.
+        // The mammographer submitting the Mammography Screening counts as a mammogram;
+        // the doctor submitting the Clinical Examination counts as a clinical exam.
+        $mammograms    = \App\Models\MammogramFinding::whereIn('record_id', $ids)->where('status', 'submitted')->count();
+        $clinicalExams = \App\Models\ClinicalExamination::whereIn('record_id', $ids)->where('status', 'submitted')->count();
+
         $referrals       = Referral::whereIn('record_id', $ids)->count();
         $referralsClosed = Referral::whereIn('record_id', $ids)->where('status', 'completed')->count();
 
@@ -65,6 +71,8 @@ class DashboardService
             'total'          => $total,
             'completed'      => $completed,
             'pending'        => $pending,
+            'mammograms'     => $mammograms,
+            'clinicalExams'  => $clinicalExams,
             'normal'         => $normal,
             'abnormal'       => $abnormal,
             'abnormalRate'   => $resultTotal ? round($abnormal / $resultTotal * 100, 1) : 0,

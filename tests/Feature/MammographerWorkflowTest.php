@@ -39,18 +39,20 @@ class MammographerWorkflowTest extends TestCase
         return User::where('email', 's.nuaimi@focp.ae')->firstOrFail();
     }
 
+    private function radiologist(): User
+    {
+        return User::where('email', 'h.marri@focp.ae')->firstOrFail();
+    }
+
     /** A case registered by the nurse and routed straight to the mammographer. */
     private function routedCase(): PatientHistoryRecord
     {
-        $this->actingAs($this->nurse())->post('/nurse/record', [
-            'action'            => 'submit',
-            'full_name'         => 'Mammo Patient',
-            'mobile1'           => '+971500000030',
-            'consent'           => '1',
-            'patient_signature' => 'data:image/png;base64,iVBORw0KGgo=',
-            'assign_role'       => 'mammographer',
-            'assignee_id'       => $this->mammographer()->id,
-        ])->assertRedirect();
+        $this->actingAs($this->nurse())->post('/nurse/record', $this->registrationPayload([
+            'full_name'   => 'Mammo Patient',
+            'mobile1'     => '+971500000030',
+            'assign_role' => 'mammographer',
+            'assignee_id' => $this->mammographer()->id,
+        ]))->assertRedirect();
 
         return PatientHistoryRecord::latest('id')->firstOrFail();
     }
@@ -78,7 +80,33 @@ class MammographerWorkflowTest extends TestCase
             ->assertSee('<fieldset disabled', false);          // the whole form is rendered disabled
     }
 
-    public function test_mammographer_drafts_then_submits_the_findings(): void
+    /**
+     * Business feedback round 3: the Mammography Screening form is a short patient
+     * block (PC number entered by hand), one findings box, and the radiologist it
+     * is handed to on submit.
+     */
+    public function test_mammography_screening_form_is_short_and_titled_correctly(): void
+    {
+        $record = $this->routedCase();
+
+        $this->actingAs($this->mammographer())->get("/mammographer/record/{$record->id}/findings")
+            ->assertOk()
+            ->assertSee('Mammography Screening')
+            ->assertSee('Patient Number')
+            ->assertSee('PC Number')
+            ->assertSee('Mammo Patient')
+            ->assertSee('patient@example.com')
+            // The long structured form is gone.
+            ->assertDontSee('BI-RADS')
+            ->assertDontSee('name="modality"', false)
+            ->assertDontSee('name="breast_density"', false)
+            ->assertDontSee('name="birads_right"', false)
+            ->assertDontSee('name="impression"', false)
+            ->assertDontSee('name="recommendation"', false)
+            ->assertDontSee('name="comparison"', false);
+    }
+
+    public function test_mammographer_drafts_then_submits_and_assigns_to_the_radiologist(): void
     {
         $record = $this->routedCase();
         $mammo  = $this->mammographer();
@@ -87,39 +115,62 @@ class MammographerWorkflowTest extends TestCase
 
         // A draft saves whatever is filled in so far.
         $this->actingAs($mammo)->put("/mammographer/record/{$record->id}/findings", [
-            'action'         => 'draft',
-            'findings_right' => 'No discrete mass.',
+            'action'   => 'draft',
+            'findings' => 'No discrete mass.',
         ])->assertRedirect();
 
         $finding = $record->fresh()->mammogramFinding;
         $this->assertSame(MammogramFinding::DRAFT, $finding->status);
+        $this->assertSame('No discrete mass.', $finding->findings);
         $this->assertNull($finding->submitted_at);
 
-        // Submitting requires the clinically meaningful fields.
+        // Submitting needs the PC number, the findings and a radiologist.
         $this->actingAs($mammo)->put("/mammographer/record/{$record->id}/findings", [
-            'action'         => 'submit',
-            'findings_right' => 'No discrete mass.',
-        ])->assertSessionHasErrors(['exam_date', 'modality', 'birads_right', 'birads_left', 'impression', 'recommendation']);
+            'action' => 'submit',
+        ])->assertSessionHasErrors(['manual_pc_number', 'findings', 'radiologist_id']);
 
         $this->actingAs($mammo)->put("/mammographer/record/{$record->id}/findings", [
-            'action'         => 'submit',
-            'exam_date'      => now()->toDateString(),
-            'modality'       => 'both',
-            'breast_density' => 'b',
-            'birads_right'   => '2',
-            'birads_left'    => '4',
-            'findings_right' => 'Benign calcifications.',
-            'findings_left'  => 'Irregular 9mm mass, upper outer quadrant.',
-            'impression'     => 'Suspicious left-sided finding.',
-            'recommendation' => 'biopsy',
+            'action'           => 'submit',
+            'manual_pc_number' => 'PC-4821',
+            'findings'         => 'Irregular 9mm mass in the left upper outer quadrant.',
+            'radiologist_id'   => $this->radiologist()->id,
         ])->assertRedirect(route('mammographer.record', $record));
 
-        $finding = $record->fresh()->mammogramFinding;
+        $record  = $record->fresh();
+        $finding = $record->mammogramFinding;
+
         $this->assertSame(MammogramFinding::SUBMITTED, $finding->status);
         $this->assertNotNull($finding->submitted_at);
-        $this->assertSame($this->mammographer()->id, $finding->mammographer_id);
-        // The more serious side drives the overall assessment.
-        $this->assertSame('4', $finding->highestBirads());
+        $this->assertSame($mammo->id, $finding->mammographer_id);
+        $this->assertSame('Irregular 9mm mass in the left upper outer quadrant.', $finding->findings);
+
+        // The PC number is the mammographer's, entered by hand onto the patient.
+        $this->assertSame('PC-4821', $record->patient->manual_pc_number);
+
+        // ...and the case is now with the radiologist.
+        $this->assertSame(PatientHistoryRecord::ROLE_RADIOLOGIST, $record->assigned_role);
+        $this->assertSame(PatientHistoryRecord::ASSIGNED, $record->status);
+        $this->assertSame($this->radiologist()->id, $record->radiologist_id);
+    }
+
+    public function test_a_radiologist_from_another_clinic_cannot_be_assigned(): void
+    {
+        $record = $this->routedCase();
+
+        $sharjah = Clinic::where('code', 'SHJ-FIX-01')->firstOrFail();
+        $outsider = User::create(['name' => 'Other Radiologist', 'email' => 'other.r@focp.ae', 'password' => bcrypt('password')]);
+        $outsider->syncRoles(['radiologist']);
+        $outsider->syncPermissions(['manage_radiology']);
+        $outsider->clinics()->sync([$sharjah->id]);
+
+        $this->actingAs($this->mammographer())->put("/mammographer/record/{$record->id}/findings", [
+            'action'           => 'submit',
+            'manual_pc_number' => 'PC-4822',
+            'findings'         => 'Normal study.',
+            'radiologist_id'   => $outsider->id,
+        ])->assertSessionHasErrors('radiologist_id');
+
+        $this->assertNull($record->fresh()->radiologist_id);
     }
 
     public function test_the_file_stays_open_for_a_late_report_even_after_the_admin_closes_the_case(): void
@@ -176,8 +227,8 @@ class MammographerWorkflowTest extends TestCase
         $this->assertSame('Mammo Patient', $record->fresh()->patient->full_name);
 
         $this->actingAs($mammo)->put("/mammographer/record/{$record->id}/findings", [
-            'action'     => 'draft',
-            'impression' => 'Late edit',
+            'action'   => 'draft',
+            'findings' => 'Late edit',
         ])->assertRedirect();
 
         $this->assertNull($record->fresh()->mammogramFinding);

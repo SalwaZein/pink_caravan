@@ -4,13 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Models\MammogramFinding;
 use App\Models\PatientHistoryRecord;
+use App\Models\User;
 use App\Support\Audit;
 use App\Support\PatientNotifier;
 use App\Support\RecordPresenter;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
@@ -59,12 +62,14 @@ class MammographerController extends Controller
     {
         $this->authorizeAssigned($record);
 
-        // Opening a freshly assigned case marks it as being worked on.
-        if ($record->status === PatientHistoryRecord::ASSIGNED) {
+        // Opening a freshly assigned case marks it as being worked on. A case that
+        // has since been handed to a radiologist belongs to them — don't pull it back.
+        if ($record->status === PatientHistoryRecord::ASSIGNED
+            && $record->assigned_role === PatientHistoryRecord::ROLE_MAMMOGRAPHER) {
             $record->update(['status' => PatientHistoryRecord::IN_REVIEW]);
         }
 
-        $record->load('patient', 'clinic', 'doctor', 'nurse', 'examination', 'mammogramFinding');
+        $record->load('patient', 'clinic', 'doctor', 'nurse', 'radiologist', 'examination', 'mammogramFinding');
 
         return view('staff.mammographer.manage', [
             'sidebarRole' => auth()->user()->sidebarRole(),
@@ -100,7 +105,13 @@ class MammographerController extends Controller
         ]);
     }
 
-    /** #5 — the mammography findings form for this case. */
+    /**
+     * #5 — the Mammography Screening form for this case.
+     *
+     * Round 3 cut it down to what the mammographer actually fills in: a short
+     * patient-details block (identity read from registration, PC number entered by
+     * hand), one free-text findings box, and the radiologist to hand the study to.
+     */
     public function findings(PatientHistoryRecord $record): View
     {
         $this->authorizeAssigned($record);
@@ -108,16 +119,22 @@ class MammographerController extends Controller
         $record->load('patient', 'clinic', 'mammogramFinding');
 
         return view('staff.mammographer.findings', [
-            'sidebarRole' => auth()->user()->sidebarRole(),
-            'route'       => 'mammographer/queue',
-            'record'      => $record,
-            'patient'     => $record->patient,
-            'finding'     => $record->mammogramFinding ?? new MammogramFinding(['status' => MammogramFinding::DRAFT]),
-            'readOnly'    => ! $this->canStillWork($record),
+            'sidebarRole'  => auth()->user()->sidebarRole(),
+            'route'        => 'mammographer/queue',
+            'record'       => $record,
+            'patient'      => $record->patient,
+            'finding'      => $record->mammogramFinding ?? new MammogramFinding(['status' => MammogramFinding::DRAFT]),
+            'readOnly'     => ! $this->canStillWork($record),
+            'radiologists' => $this->radiologists($record),
         ]);
     }
 
-    /** Save the findings as a draft, or submit them into the patient's file. */
+    /**
+     * Save the screening as a draft, or submit it and assign it to a radiologist.
+     *
+     * Submitting is what makes the screening part of the record, so that is where
+     * the PC number, the findings and the radiologist become mandatory.
+     */
     public function saveFindings(Request $request, PatientHistoryRecord $record): RedirectResponse
     {
         $this->authorizeAssigned($record);
@@ -128,50 +145,74 @@ class MammographerController extends Controller
 
         $isSubmit = $request->input('action') === 'submit';
 
-        $rules = [
-            'exam_date'      => ['nullable', 'date'],
-            'modality'       => ['nullable', 'in:'.implode(',', MammogramFinding::MODALITIES)],
-            'breast_density' => ['nullable', 'in:'.implode(',', MammogramFinding::DENSITIES)],
-            'birads_right'   => ['nullable', 'in:'.implode(',', MammogramFinding::BIRADS)],
-            'birads_left'    => ['nullable', 'in:'.implode(',', MammogramFinding::BIRADS)],
-            'findings_right' => ['nullable', 'string', 'max:4000'],
-            'findings_left'  => ['nullable', 'string', 'max:4000'],
-            'comparison'     => ['nullable', 'string', 'max:2000'],
-            'impression'     => ['nullable', 'string', 'max:4000'],
-            'recommendation' => ['nullable', 'in:'.implode(',', MammogramFinding::RECOMMENDATIONS)],
-            'notes'          => ['nullable', 'string', 'max:2000'],
-        ];
+        $data = $request->validate([
+            'manual_pc_number' => [$isSubmit ? 'required' : 'nullable', 'string', 'max:60'],
+            'findings'         => [$isSubmit ? 'required' : 'nullable', 'string', 'max:8000'],
+            'radiologist_id'   => [$isSubmit ? 'required' : 'nullable', 'integer'],
+        ]);
 
-        // Submitting is what makes the findings part of the record, so the
-        // clinically meaningful fields become mandatory at that point only.
-        if ($isSubmit) {
-            $rules['exam_date']      = ['required', 'date'];
-            $rules['modality']       = ['required', 'in:'.implode(',', MammogramFinding::MODALITIES)];
-            $rules['birads_right']   = ['required', 'in:'.implode(',', MammogramFinding::BIRADS)];
-            $rules['birads_left']    = ['required', 'in:'.implode(',', MammogramFinding::BIRADS)];
-            $rules['impression']     = ['required', 'string', 'max:4000'];
-            $rules['recommendation'] = ['required', 'in:'.implode(',', MammogramFinding::RECOMMENDATIONS)];
+        $radiologist = null;
+        if (! empty($data['radiologist_id'])) {
+            $radiologist = $this->radiologists($record)->firstWhere('id', (int) $data['radiologist_id']);
+
+            if (! $radiologist) {
+                throw ValidationException::withMessages(['radiologist_id' => __('pc.assignee_not_in_clinic')]);
+            }
         }
 
-        $data = $request->validate($rules);
-
         $finding = $record->mammogramFinding ?? new MammogramFinding(['record_id' => $record->id]);
-        $finding->fill($data);
+        $finding->fill(['findings' => $data['findings'] ?? null]);
         $finding->record_id       = $record->id;
         $finding->mammographer_id = $finding->mammographer_id ?? auth()->id();
         $finding->status          = $isSubmit ? MammogramFinding::SUBMITTED : MammogramFinding::DRAFT;
         $finding->submitted_at    = $isSubmit ? ($finding->submitted_at ?? now()) : null;
         $finding->save();
 
-        // Whoever files the findings owns the case on the mammography side.
-        if (! $record->mammographer_id) {
-            $record->update(['mammographer_id' => auth()->id()]);
+        // The PC number lives on the patient — it identifies her across the campaign.
+        if (array_key_exists('manual_pc_number', $data)) {
+            $record->patient->update(['manual_pc_number' => $data['manual_pc_number'] ?: null]);
         }
 
-        Audit::log($isSubmit ? 'mammogram.findings_submitted' : 'mammogram.findings_drafted', $record, $record->ref_no);
+        // Whoever files the screening owns the case on the mammography side.
+        $record->mammographer_id = $record->mammographer_id ?? auth()->id();
+
+        if ($radiologist) {
+            $record->radiologist_id = $radiologist->id;
+
+            // Submitting routes the case to that radiologist to report on. A case the
+            // clinic has already closed stays closed (a late screening must not reopen it).
+            if ($isSubmit && ! $record->isClosed()) {
+                $record->assigned_role = PatientHistoryRecord::ROLE_RADIOLOGIST;
+                $record->status        = PatientHistoryRecord::ASSIGNED;
+            }
+        }
+
+        $record->save();
+
+        Audit::log(
+            $isSubmit ? 'mammogram.findings_submitted' : 'mammogram.findings_drafted',
+            $record,
+            $isSubmit && $radiologist
+                ? "{$record->ref_no} → ".__('pc.role_radiologist').": {$radiologist->name}"
+                : $record->ref_no,
+        );
 
         return redirect()->route($isSubmit ? 'mammographer.record' : 'mammographer.findings', $record)
-            ->with('status', $isSubmit ? __('pc.findings_submitted_ok') : __('pc.findings_saved_ok'));
+            ->with('status', $isSubmit
+                ? __('pc.findings_assigned_ok', ['name' => $radiologist?->name ?? ''])
+                : __('pc.findings_saved_ok'));
+    }
+
+    /** Radiologists working in this record's clinic. */
+    private function radiologists(PatientHistoryRecord $record): Collection
+    {
+        if (! $record->clinic_id) {
+            return User::role('radiologist')->orderBy('name')->get();
+        }
+
+        return User::role('radiologist')
+            ->whereHas('clinics', fn ($q) => $q->where('clinics.id', $record->clinic_id))
+            ->orderBy('name')->get();
     }
 
     /** Save patient/PC details and, optionally, upload the mammogram report file. */

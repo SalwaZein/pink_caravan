@@ -16,9 +16,6 @@
     $emirates = ['abu_dhabi','dubai','sharjah','ajman','umm_al_quwain','ras_al_khaimah','fujairah'];
     // Family-history relationship options per degree (from business feedback).
     $relOptions = ['deg1' => __('pc.rel_deg1'), 'deg2' => __('pc.rel_deg2'), 'deg3' => __('pc.rel_deg3')];
-    $referral = $record->referrals ?? collect();
-    $rMammo = $editing ? $referral->firstWhere('type','mammogram') : null;
-    $rUls   = $editing ? $referral->firstWhere('type','uls') : null;
     // Emirates ID reader endpoint: the configured local bridge, or the dev mock.
     $eidReaderUrl = config('services.emirates_id.reader_url') ?: route('tools.eid.read');
 
@@ -123,32 +120,33 @@
                 <label style="{{ $lbl }}">{{ __('pc.reg_number') }}<input value="{{ $editing ? $record->ref_no : __('pc.pc_auto') }}" readonly style="{{ $inp }}background:#FAF4F7;color:#9A8F97;" /></label>
                 {{-- Manual PC Number is entered later by the mammographer, so it is not shown in the nurse form. --}}
                 {{-- Emirates ID (auto-filled by the reader, or entered manually) --}}
-                <label style="{{ $lbl }}">{{ __('pc.emirates_id') }}<input name="emirates_id" value="{{ old('emirates_id', $patient->emirates_id) }}" placeholder="784-____-_______-_" style="{{ $inp }}" /></label>
+                <label style="{{ $lbl }}">{{ __('pc.emirates_id') }} *<input name="emirates_id" value="{{ old('emirates_id', $patient->emirates_id) }}" placeholder="784-____-_______-_" required style="{{ $inp }}" /></label>
                 <label style="{{ $lbl }}">{{ __('pc.full_name') }} *<input name="full_name" value="{{ old('full_name', $patient->full_name) }}" required style="{{ $inp }}" /></label>
-                <label style="{{ $lbl }}">{{ __('pc.dob') }}<x-date-field name="dob" :value="old('dob', optional($patient->dob)->toDateString())" :min-year="1900" :max-year="now()->year" /></label>
-                <label style="{{ $lbl }}">{{ __('pc.nationality') }}<select name="nationality" style="{{ $inp }}background:#fff;"><option value="">—</option>@foreach (\App\Support\Nationalities::all() as $nat)<option value="{{ $nat }}" @selected(old('nationality', $patient->nationality) === $nat)>{{ $nat }}</option>@endforeach</select></label>
-                <label style="{{ $lbl }}">{{ __('pc.emirate') }}<select name="emirate" style="{{ $inp }}background:#fff;"><option value="">—</option>@foreach ($emirates as $em)<option value="{{ $em }}" @selected(old('emirate', $patient->emirate) === $em)>{{ __('pc.em_'.$em) }}</option>@endforeach</select></label>
-                <div style="{{ $lbl }}">{{ __('pc.marital') }}
+                <label style="{{ $lbl }}">{{ __('pc.dob') }} *<x-date-field name="dob" :value="old('dob', optional($patient->dob)->toDateString())" :min-year="1900" :max-year="now()->year" required /></label>
+                <label style="{{ $lbl }}">{{ __('pc.nationality') }} *<select name="nationality" required style="{{ $inp }}background:#fff;"><option value="">—</option>@foreach (\App\Support\Nationalities::all() as $nat)<option value="{{ $nat }}" @selected(old('nationality', $patient->nationality) === $nat)>{{ $nat }}</option>@endforeach</select></label>
+                <label style="{{ $lbl }}">{{ __('pc.emirate') }} *<select name="emirate" required style="{{ $inp }}background:#fff;"><option value="">—</option>@foreach ($emirates as $em)<option value="{{ $em }}" @selected(old('emirate', $patient->emirate) === $em)>{{ __('pc.em_'.$em) }}</option>@endforeach</select></label>
+                <div style="{{ $lbl }}">{{ __('pc.marital') }} *
                     <div style="display:flex;gap:16px;margin-top:9px;">
                         @foreach (['single'=>__('pc.single'),'married'=>__('pc.married'),'widow'=>__('pc.widow')] as $val=>$label)
                             <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;font-weight:500;color:#453A44;">
-                                <input type="radio" name="marital_status" value="{{ $val }}" @checked(old('marital_status', $patient->marital_status) === $val) style="width:16px;height:16px;accent-color:#E6017E;margin:0;cursor:pointer;" />
+                                <input type="radio" name="marital_status" value="{{ $val }}" @checked(old('marital_status', $patient->marital_status) === $val) required style="width:16px;height:16px;accent-color:#E6017E;margin:0;cursor:pointer;" />
                                 {{ $label }}
                             </label>
                         @endforeach
                     </div>
                 </div>
                 <label style="{{ $lbl }}">{{ __('pc.mobile1') }} *<input type="tel" name="mobile1" value="{{ old('mobile1', $patient->mobile1) }}" required style="{{ $inp }}" /></label>
-                <label style="{{ $lbl }}">{{ __('pc.mobile2') }}<input type="tel" name="mobile2" value="{{ old('mobile2', $patient->mobile2) }}" style="{{ $inp }}" /></label>
-                <label style="{{ $lbl }}">{{ __('pc.email') }}<input type="email" name="email" value="{{ old('email', $patient->email) }}" style="{{ $inp }}" /></label>
-                <label style="{{ $lbl }}">{{ __('pc.menarche') }}<input type="number" name="age_at_menarche" value="{{ old('age_at_menarche', $record->age_at_menarche) }}" style="{{ $inp }}" /></label>
-                <label style="{{ $lbl }}">{{ __('pc.lmp') }}<x-date-field name="lmp" :value="old('lmp', optional($record->lmp)->toDateString())" :min-year="now()->year - 5" :max-year="now()->year" /></label>
+                <label style="{{ $lbl }}">{{ __('pc.mobile2') }} *<input type="tel" name="mobile2" value="{{ old('mobile2', $patient->mobile2) }}" required style="{{ $inp }}" /></label>
+                <label style="{{ $lbl }}">{{ __('pc.email') }} *<input type="email" name="email" value="{{ old('email', $patient->email) }}" required style="{{ $inp }}" /></label>
+                <label style="{{ $lbl }}">{{ __('pc.menarche') }} *<input type="number" min="0" max="99" name="age_at_menarche" value="{{ old('age_at_menarche', $record->age_at_menarche) }}" required style="{{ $inp }}" /></label>
+                {{-- The year list is open (no 5-year cap) — some patients report a very old LMP. --}}
+                <label style="{{ $lbl }}">{{ __('pc.lmp') }} *<x-date-field name="lmp" :value="old('lmp', optional($record->lmp)->toDateString())" :min-year="1900" :max-year="now()->year" required /></label>
                 {{-- Breast implant Yes/No — replaces "Number of children", last field in this section --}}
-                <div style="{{ $lbl }}">{{ __('pc.breast_implant') }}
+                <div style="{{ $lbl }}">{{ __('pc.breast_implant') }} *
                     <div style="display:flex;gap:16px;margin-top:9px;">
                         @foreach (['yes'=>__('pc.yes'),'no'=>__('pc.no')] as $val=>$label)
                             <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:13px;font-weight:500;color:#453A44;">
-                                <input type="radio" name="breast_implant" value="{{ $val }}" @checked(old('breast_implant', $record->breast_implant) === $val) style="width:16px;height:16px;accent-color:#E6017E;margin:0;cursor:pointer;" />
+                                <input type="radio" name="breast_implant" value="{{ $val }}" @checked(old('breast_implant', $record->breast_implant) === $val) required style="width:16px;height:16px;accent-color:#E6017E;margin:0;cursor:pointer;" />
                                 {{ $label }}
                             </label>
                         @endforeach
@@ -177,8 +175,10 @@
                                       :style="'cursor:pointer;min-width:54px;text-align:center;padding:6px 18px;border-radius:999px;font-size:12.5px;border:1.5px solid;transition:all .12s;' + (v==='no' ? 'background:#F1E7ED;border-color:#6B4257;color:#6B4257;font-weight:700;' : 'background:#fff;border-color:#DCC9D5;color:#9A8F97;font-weight:500;')">{{ __('pc.no') }}</span>
                             </div>
                         </div>
+                        {{-- Answering "yes" makes the detail box mandatory. It is only required
+                             while it is visible, so a "no" answer never blocks the submit. --}}
                         <div x-show="v==='yes'" x-cloak style="margin-top:8px;">
-                            <textarea name="personal_notes[{{ $pi }}]" rows="3" placeholder="{{ __('pc.details_ph') }}" style="width:100%;padding:11px 13px;border:1px solid #E3D2DC;border-radius:9px;font-size:13px;line-height:1.5;min-height:78px;resize:vertical;">{{ $noteOld }}</textarea>
+                            <textarea name="personal_notes[{{ $pi }}]" rows="3" :required="v==='yes'" placeholder="{{ __('pc.details_ph') }}" style="width:100%;padding:11px 13px;border:1px solid #E3D2DC;border-radius:9px;font-size:13px;line-height:1.5;min-height:78px;resize:vertical;">{{ $noteOld }}</textarea>
                         </div>
                     </div>
                 @endforeach
@@ -192,20 +192,22 @@
                 @foreach (['deg1'=>__('pc.deg1'),'deg2'=>__('pc.deg2'),'deg3'=>__('pc.deg3')] as $dk=>$dl)
                     @php($fRel = old("family.$dk.relationship", $fh[$dk]['relationship'] ?? ''))
                     @php($fAge = old("family.$dk.age", $fh[$dk]['age'] ?? ''))
-                    <div class="pc-stack-sm" style="display:grid;grid-template-columns:96px 1fr 170px;gap:14px;align-items:center;border:1px solid #EFE2EA;border-radius:12px;padding:14px;background:#FAF4F7;">
+                    {{-- Every degree must be answered. "None" is an explicit answer so a
+                         patient with no family history never has to invent a relative. --}}
+                    <div class="pc-stack-sm" x-data="{ rel: @js($fRel ?: '') }" style="display:grid;grid-template-columns:96px 1fr 170px;gap:14px;align-items:center;border:1px solid #EFE2EA;border-radius:12px;padding:14px;background:#FAF4F7;">
                         <div style="font-size:13px;font-weight:700;color:#E6017E;">{{ $dl }}</div>
-                        <div style="font-size:11.5px;font-weight:600;color:#6B4257;">{{ __('pc.relationship') }}
+                        <div style="font-size:11.5px;font-weight:600;color:#6B4257;">{{ __('pc.relationship') }} *
                             <div style="display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:8px;">
-                                @foreach ($relOptions[$dk] as $opt)
+                                @foreach (array_merge(['none'], $relOptions[$dk]) as $opt)
                                     <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12.5px;font-weight:500;color:#453A44;">
-                                        <input type="radio" name="family[{{ $dk }}][relationship]" value="{{ $opt }}" @checked($fRel === $opt) style="width:15px;height:15px;accent-color:#E6017E;margin:0;cursor:pointer;" />
-                                        {{ $opt }}
+                                        <input type="radio" name="family[{{ $dk }}][relationship]" value="{{ $opt }}" x-model="rel" @checked($fRel === $opt) required style="width:15px;height:15px;accent-color:#E6017E;margin:0;cursor:pointer;" />
+                                        {{ $opt === 'none' ? __('pc.rel_none') : $opt }}
                                     </label>
                                 @endforeach
                             </div>
                         </div>
-                        <label style="font-size:11.5px;font-weight:600;color:#6B4257;">{{ __('pc.age_at_diagnosis') }}
-                            <input type="number" min="0" max="120" name="family[{{ $dk }}][age]" value="{{ $fAge }}" placeholder="—" style="{{ $inp }}" />
+                        <label style="font-size:11.5px;font-weight:600;color:#6B4257;">{{ __('pc.age_at_diagnosis') }} <span x-show="rel !== 'none'">*</span>
+                            <input type="number" min="0" max="120" name="family[{{ $dk }}][age]" value="{{ $fAge }}" placeholder="—" :required="rel !== '' && rel !== 'none'" :disabled="rel === 'none'" style="{{ $inp }}" />
                         </label>
                     </div>
                 @endforeach
@@ -215,21 +217,21 @@
         {{-- 4. Previous screening results --}}
         <div style="{{ $card }}">
             {!! $sectionHead(4, __('pc.prev_screening')) !!}
+            {{-- "Abnormal" records the fact and nothing more: no referral details or
+                 recommendation are collected here (business feedback round 3). --}}
             <input type="hidden" name="cbe_result" :value="result" />
             <div class="pc-cols-2" style="gap:16px;align-items:end;">
-                <label style="{{ $lbl }}">{{ __('pc.last_mammo') }}<x-date-field name="last_mammogram" :value="old('last_mammogram', optional($record->last_mammogram)->toDateString())" :min-year="1980" :max-year="now()->year" /></label>
-                <div style="{{ $lbl }}">{{ __('pc.last_mammo_report') }}
+                {{-- Only meaningful once a previous mammogram exists, so it follows the answer. --}}
+                <label style="{{ $lbl }}">{{ __('pc.last_mammo') }} <span x-show="result !== 'not_done'">*</span>
+                    <x-date-field name="last_mammogram" :value="old('last_mammogram', optional($record->last_mammogram)->toDateString())" :min-year="1900" :max-year="now()->year" required="result !== 'not_done'" />
+                </label>
+                <div style="{{ $lbl }}">{{ __('pc.last_mammo_report') }} *
                     <div style="display:flex;gap:10px;margin-top:7px;">
                         <span @click="result='normal'" role="button" style="cursor:pointer;flex:1;text-align:center;padding:10px;border:2px solid #E3D2DC;border-radius:9px;font-size:13px;font-weight:700;background:#fff;color:#6B6472;" :style="result==='normal' ? { borderColor:'#2E7D32', background:'#E4F4EF', color:'#2E7D32' } : { borderColor:'#E3D2DC', background:'#fff', color:'#6B6472' }">{{ __('pc.normal') }}</span>
                         <span @click="result='abnormal'" role="button" style="cursor:pointer;flex:1;text-align:center;padding:10px;border:2px solid #E3D2DC;border-radius:9px;font-size:13px;font-weight:700;background:#fff;color:#6B6472;" :style="result==='abnormal' ? { borderColor:'#C62828', background:'#FBE4E4', color:'#C62828' } : { borderColor:'#E3D2DC', background:'#fff', color:'#6B6472' }">{{ __('pc.abnormal') }}</span>
+                        <span @click="result='not_done'" role="button" style="cursor:pointer;flex:1;text-align:center;padding:10px;border:2px solid #E3D2DC;border-radius:9px;font-size:13px;font-weight:700;background:#fff;color:#6B6472;" :style="result==='not_done' ? { borderColor:'#6B4257', background:'#F1E7ED', color:'#6B4257' } : { borderColor:'#E3D2DC', background:'#fff', color:'#6B6472' }">{{ __('pc.never_screened') }}</span>
                     </div>
                 </div>
-            </div>
-            <div x-show="result==='abnormal'" x-cloak class="pc-stack-sm" style="margin-top:16px;padding:16px;background:#FBE4E4;border:1px solid #F3C4C4;border-radius:12px;display:grid;grid-template-columns:1fr 1fr;gap:14px;">
-                <label style="font-size:12.5px;font-weight:600;color:#9A2E2E;">{{ __('pc.refer_mammo') }}<x-date-field name="refer_mammo_date" :value="old('refer_mammo_date', optional($rMammo?->referral_date)->toDateString())" :min-year="now()->year - 1" :max-year="now()->year + 2" /></label>
-                <label style="font-size:12.5px;font-weight:600;color:#9A2E2E;">{{ __('pc.hospital') }}<input name="refer_mammo_hospital" value="{{ old('refer_mammo_hospital', $rMammo?->hospital) }}" style="{{ $inp }}border-color:#E7B7B7;" /></label>
-                <label style="font-size:12.5px;font-weight:600;color:#9A2E2E;">{{ __('pc.refer_uls') }}<x-date-field name="refer_uls_date" :value="old('refer_uls_date', optional($rUls?->referral_date)->toDateString())" :min-year="now()->year - 1" :max-year="now()->year + 2" /></label>
-                <label style="font-size:12.5px;font-weight:600;color:#9A2E2E;">{{ __('pc.hospital') }}<input name="refer_uls_hospital" value="{{ old('refer_uls_hospital', $rUls?->hospital) }}" style="{{ $inp }}border-color:#E7B7B7;" /></label>
             </div>
         </div>
 
@@ -257,7 +259,7 @@
                     <canvas x-ref="sig" x-init="initSig($refs.sig)" style="width:100%;height:150px;border:1.5px dashed #D8C4CF;border-radius:12px;background:#fff;touch-action:none;cursor:crosshair;"></canvas>
                     <p style="font-size:11px;color:#9A8F97;margin:6px 0 0;">{{ __('pc.sign_hint') }}</p>
                 </div>
-                <label style="{{ $lbl }}">{{ __('pc.sign_date') }}<x-date-field name="signed_at" :value="old('signed_at', optional($record->signed_at)->toDateString() ?? now()->toDateString())" :min-year="now()->year - 2" :max-year="now()->year" /></label>
+                <label style="{{ $lbl }}">{{ __('pc.sign_date') }} *<x-date-field name="signed_at" :value="old('signed_at', optional($record->signed_at)->toDateString() ?? now()->toDateString())" :min-year="now()->year - 2" :max-year="now()->year" required /></label>
             </div>
         </div>
 
@@ -315,11 +317,14 @@
             </div>
         @else
             <div style="position:sticky;bottom:0;background:linear-gradient(0deg,#F4EEF1 70%,transparent);padding:14px 0 4px;display:flex;justify-content:space-between;align-items:center;">
-                <button type="submit" name="action" value="draft" style="cursor:pointer;color:#6B6472;font-weight:600;font-size:14px;padding:12px 22px;border:1px solid #E3D2DC;border-radius:11px;background:#fff;">{{ __('pc.save_draft') }}</button>
+                {{-- A draft is a partial record by definition, so it skips the browser's
+                     required-field checks; submitting is what enforces them. --}}
+                <button type="submit" name="action" value="draft" formnovalidate style="cursor:pointer;color:#6B6472;font-weight:600;font-size:14px;padding:12px 22px;border:1px solid #E3D2DC;border-radius:11px;background:#fff;">{{ __('pc.save_draft') }}</button>
                 <div style="display:flex;align-items:center;gap:14px;">
-                    <span x-show="!consent" style="font-size:12.5px;color:#C62828;">{{ __('pc.consent_required') }}</span>
-                    <span x-show="consent && !hasSignature" x-cloak style="font-size:12.5px;color:#C62828;">{{ __('pc.signature_required') }}</span>
-                    <button type="submit" name="action" value="submit" :disabled="!consent || !hasSignature" style="cursor:pointer;color:#fff;font-weight:700;font-size:14px;padding:12px 26px;border:none;border-radius:11px;box-shadow:0 5px 15px rgba(230,1,126,.2);background:#E3D2DC;" :style="(consent && hasSignature) ? { background:'linear-gradient(90deg,#E6017E,#C0116E)', cursor:'pointer' } : { background:'#E3D2DC', cursor:'not-allowed' }">{{ __('pc.submit_assign') }} →</button>
+                    <span x-show="!result" style="font-size:12.5px;color:#C62828;">{{ __('pc.prev_screening_required') }}</span>
+                    <span x-show="result && !consent" x-cloak style="font-size:12.5px;color:#C62828;">{{ __('pc.consent_required') }}</span>
+                    <span x-show="result && consent && !hasSignature" x-cloak style="font-size:12.5px;color:#C62828;">{{ __('pc.signature_required') }}</span>
+                    <button type="submit" name="action" value="submit" :disabled="!result || !consent || !hasSignature" style="cursor:pointer;color:#fff;font-weight:700;font-size:14px;padding:12px 26px;border:none;border-radius:11px;box-shadow:0 5px 15px rgba(230,1,126,.2);background:#E3D2DC;" :style="(result && consent && hasSignature) ? { background:'linear-gradient(90deg,#E6017E,#C0116E)', cursor:'pointer' } : { background:'#E3D2DC', cursor:'not-allowed' }">{{ __('pc.submit_assign') }} →</button>
                 </div>
             </div>
         @endif

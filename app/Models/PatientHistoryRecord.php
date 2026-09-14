@@ -23,14 +23,16 @@ class PatientHistoryRecord extends Model
     // Roles a case can be assigned to.
     public const ROLE_DOCTOR       = 'doctor';
     public const ROLE_MAMMOGRAPHER = 'mammographer';
+    public const ROLE_RADIOLOGIST  = 'radiologist';
 
     protected $fillable = [
-        'ref_no', 'patient_id', 'clinic_id', 'nurse_id', 'assigned_doctor_id', 'mammographer_id', 'assigned_role', 'record_date',
+        'ref_no', 'patient_id', 'clinic_id', 'nurse_id', 'assigned_doctor_id', 'mammographer_id', 'radiologist_id', 'assigned_role', 'record_date',
         'age_at_menarche', 'number_of_children', 'breast_implant', 'age_first_delivery', 'lmp', 'menopause', 'menopause_since_year',
         'personal_history', 'personal_history_notes', 'family_history',
         'breastfeeding_under6', 'breastfeeding_children', 'last_mammogram', 'cbe_result', 'examiner_name',
         'consent_given', 'consent_at', 'consent_statements', 'patient_signature', 'signed_at',
         'mammogram_report_path', 'report_uploaded_at', 'report_sent_at',
+        'radiology_report_path', 'radiology_report_uploaded_at', 'radiology_report_sent_at',
         'status', 'submitted_at',
     ];
 
@@ -48,6 +50,8 @@ class PatientHistoryRecord extends Model
             'submitted_at'           => 'datetime',
             'report_uploaded_at'     => 'datetime',
             'report_sent_at'         => 'datetime',
+            'radiology_report_uploaded_at' => 'datetime',
+            'radiology_report_sent_at'     => 'datetime',
             'personal_history'       => 'array',
             'personal_history_notes' => 'array',
             'family_history'         => 'array',
@@ -78,6 +82,12 @@ class PatientHistoryRecord extends Model
     public function mammographer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'mammographer_id');
+    }
+
+    /** The radiologist the mammography screening was assigned to. */
+    public function radiologist(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'radiologist_id');
     }
 
     public function examination(): HasOne
@@ -117,12 +127,13 @@ class PatientHistoryRecord extends Model
         return ! $this->isClosed();
     }
 
-    /** The user the case is currently assigned to (doctor or mammographer), if any. */
+    /** The user the case is currently assigned to (doctor, mammographer or radiologist), if any. */
     public function activeAssignee(): ?User
     {
         return match ($this->assigned_role) {
             self::ROLE_DOCTOR       => $this->doctor,
             self::ROLE_MAMMOGRAPHER => $this->mammographer,
+            self::ROLE_RADIOLOGIST  => $this->radiologist,
             default                 => null,
         };
     }

@@ -4,7 +4,7 @@
 @section('content')
 <x-staff-shell :role="$sidebarRole" :route="$route">
     <div class="pc-anim">
-        <div style="display:grid;grid-template-columns:repeat(4, 1fr);gap:14px;margin-bottom:18px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(185px, 1fr));gap:14px;margin-bottom:18px;">
             @foreach ($reportStats as $ms)
                 <div style="background:#fff;border:1px solid #EFE2EA;border-radius:14px;padding:18px 20px;box-shadow:0 3px 14px rgba(120,60,90,.05);"><div style="font-size:12px;color:#9A8F97;font-weight:600;">{{ $ms['label'] }}</div><div style="font-size:28px;font-weight:700;margin-top:4px;color:{{ $ms['color'] }};">{{ $ms['val'] }}</div><div style="font-size:11.5px;color:#B7A9B2;margin-top:2px;">{{ $ms['sub'] }}</div></div>
             @endforeach

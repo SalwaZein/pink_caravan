@@ -27,7 +27,14 @@
             'label' => __('pc.role_mammo_label'), 'user' => 'Noura Khalid', 'init' => 'NK',
             'tint' => '#0E9F8E', 'clinic' => __('pc.clinic_nurse'),
             'items' => [
-                ['key' => 'mammographer/queue', 'icon' => '🩻', 'label' => __('pc.nav_mammo_reports')],
+                ['key' => 'mammographer/queue', 'icon' => '📷', 'label' => __('pc.nav_mammo_screening')],
+            ],
+        ],
+        'radiologist' => [
+            'label' => __('pc.role_radio_label'), 'user' => 'Dr. Huda Al Marri', 'init' => 'HM',
+            'tint' => '#2A6FDB', 'clinic' => __('pc.clinic_doctor'),
+            'items' => [
+                ['key' => 'radiologist/reports', 'icon' => '🩻', 'label' => __('pc.nav_patient_report')],
             ],
         ],
         'volunteer' => [
@@ -71,6 +78,8 @@
             'clinic/queue'        => $cids ? $R()->whereIn('clinic_id', $cids)->count() : 0,
             'clinic/assign'       => $cids ? $R()->whereIn('clinic_id', $cids)->whereIn('status', ['submitted', 'returned'])->count() : 0,
             'mammographer/queue'  => $R()->where('assigned_role', 'mammographer')->where('mammographer_id', $authUser->id)->whereIn('status', ['assigned', 'in_review'])->count(),
+            // Studies assigned to this radiologist whose final report has not gone out.
+            'radiologist/reports' => $R()->where('radiologist_id', $authUser->id)->whereNull('radiology_report_sent_at')->count(),
             // Visitors still in today's walk-in queue at this user's clinic(s).
             'queue'               => \App\Models\QueueToken::query()
                                         ->when($cids, fn ($q) => $q->whereIn('clinic_id', $cids))
